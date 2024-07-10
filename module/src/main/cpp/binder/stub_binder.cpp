@@ -17,7 +17,13 @@ namespace android {
     BpBinder* IBinder::remoteBinder() { return nullptr; }
     
     // Binder.h
-
+#ifdef __LP64__
+    static_assert(sizeof(IBinder) == 24);
+    static_assert(sizeof(BBinder) == 40);
+#else
+    static_assert(sizeof(IBinder) == 12);
+    static_assert(sizeof(BBinder) == 20);
+#endif
     BBinder::BBinder() {}
 
     const String16& BBinder::getInterfaceDescriptor() const { return {}; }
@@ -57,6 +63,11 @@ namespace android {
     uid_t IPCThreadState::getCallingUid() const { return 0; }
     
     // Parcel.h
+#ifdef __LP64__
+    static_assert(sizeof(Parcel) == 120);
+#else
+    static_assert(sizeof(Parcel) == 60);
+#endif
     Parcel::Parcel() {}
     Parcel::~Parcel() {}
 
