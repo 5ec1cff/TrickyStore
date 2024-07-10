@@ -1,5 +1,18 @@
 project(external)
 
+
+# dobby
+macro(SET_OPTION option value)
+    set(${option} ${value} CACHE INTERNAL "" FORCE)
+endmacro()
+
+SET_OPTION(DOBBY_GENERATE_SHARED OFF)
+SET_OPTION(Plugin.SymbolResolver OFF)
+
+add_subdirectory(Dobby)
+target_link_libraries(dobby cxx)
+# end dobby
+
 # cxx
 set(LIBCXX_SOURCES
         algorithm.cpp
