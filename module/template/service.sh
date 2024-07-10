@@ -1,0 +1,3 @@
+DEBUG=@DEBUG@
+
+MODDIR=${0%/*}
