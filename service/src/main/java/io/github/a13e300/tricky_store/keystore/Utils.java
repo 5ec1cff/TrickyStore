@@ -1,4 +1,4 @@
-package io.github.a13e300.tricky_store.fwpatch;
+package io.github.a13e300.tricky_store.keystore;
 
 import android.system.keystore2.KeyEntryResponse;
 import android.util.Log;

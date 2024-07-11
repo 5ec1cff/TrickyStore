@@ -1,8 +1,6 @@
-package io.github.a13e300.tricky_store.fwpatch;
+package io.github.a13e300.tricky_store.keystore;
 
-import android.os.Build;
 import android.security.keystore.KeyProperties;
-import android.util.Log;
 
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1Encodable;
@@ -28,11 +26,9 @@ import org.bouncycastle.util.io.pem.PemReader;
 
 import java.io.ByteArrayInputStream;
 import java.io.StringReader;
-import java.lang.reflect.Field;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,8 +38,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import io.github.a13e300.tricky_store.Logger;
 
-public final class Android {
-    private static final String TAG = "chiteroman";
+public final class CertHack {
     private static final ASN1ObjectIdentifier OID = new ASN1ObjectIdentifier("1.3.6.1.4.1.11129.2.1.17");
 
     record KeyBox(PEMKeyPair privateKey, List<Certificate> certificates) {}
@@ -55,13 +50,17 @@ public final class Android {
         try {
             certificateFactory = CertificateFactory.getInstance("X.509");
         } catch (Throwable t) {
-            Log.e(TAG, t.toString());
+            Logger.e("", t);
             throw new RuntimeException(t);
         }
     }
 
     public static void readFromXml(String data) {
         keyboxes.clear();
+        if (data == null) {
+            Logger.i("clear all keyboxes");
+            return;
+        }
         XMLParser xmlParser = new XMLParser(data);
 
         try {
@@ -90,7 +89,7 @@ public final class Android {
                 }
                 keyboxes.put(algo, new KeyBox(parseKeyPair(privateKey), certificateChain));
             }
-            Logger.d("update " + numberOfKeyboxes + " keyboxes");
+            Logger.i("update " + numberOfKeyboxes + " keyboxes");
         } catch (Throwable t) {
             Logger.e("Error loading xml file: " + t);
         }
@@ -183,7 +182,7 @@ public final class Android {
             return certificates.toArray(new Certificate[0]);
 
         } catch (Throwable t) {
-            Log.e(TAG, t.toString());
+            Logger.e("", t);
         }
         return caList;
     }
