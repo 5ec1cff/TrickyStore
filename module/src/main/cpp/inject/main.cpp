@@ -290,7 +290,9 @@ bool inject_library(int pid, const char *lib_path, const char* entry_name) {
 }
 
 int main(int argc, char **argv) {
+#ifndef NDEBUG
     logging::setPrintEnabled(true);
+#endif
     auto pid = strtol(argv[1], nullptr, 0);
     char buf[4096];
     realpath(argv[2], buf);

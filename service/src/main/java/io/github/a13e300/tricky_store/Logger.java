@@ -16,4 +16,8 @@ public class Logger {
         Log.e(TAG, msg, t);
     }
 
+    public static void i(String msg) {
+        Log.i(TAG, msg);
+    }
+
 }

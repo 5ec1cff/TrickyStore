@@ -119,20 +119,6 @@ fun registerBinderInterceptor(backdoor: IBinder, target: IBinder, interceptor: B
 val targetPackages = mutableSetOf<String>()
 val DEFAULT_TARGET_PACKAGES = listOf("com.google.android.gms", "icu.nullptr.nativetest", "io.github.vvb2060.mahoshojo", "io.github.vvb2060.keyattestation")
 
-const val TAG = "TrickyStore"
-
-fun logD(msg: String) {
-    Log.d(TAG, msg)
-}
-
-fun logE(msg: String, t: Throwable? = null) {
-    if (t == null) {
-        Log.e(TAG, msg)
-    } else {
-        Log.e(TAG, msg, t)
-    }
-}
-
 var iPm: IPackageManager? = null
 
 fun getPm(): IPackageManager? {
@@ -163,7 +149,7 @@ const val TARGET_FILE = "target.txt"
 const val KEYBOX_FILE = "keybox.xml"
 
 class ConfigObserver : FileObserver(CONFIG_PATH, CLOSE_WRITE) {
-    val root = File(CONFIG_PATH)
+    private val root = File(CONFIG_PATH)
     override fun onEvent(event: Int, path: String?) {
         path ?: return
         if (event == CLOSE_WRITE) {
@@ -180,7 +166,7 @@ class ConfigObserver : FileObserver(CONFIG_PATH, CLOSE_WRITE) {
 fun tryRunKeystoreInterceptor(): Boolean {
     val b = ServiceManager.getService("android.system.keystore2.IKeystoreService/default") ?: return false
     b.linkToDeath({
-        logD("keystore exit, daemon exit")
+        Logger.d("keystore exit, daemon exit")
         exitProcess(0)
     }, 0)
     val bd = getBinderBackdoor(b) ?: return true
@@ -195,11 +181,11 @@ fun tryRunKeystoreInterceptor(): Boolean {
             data: Parcel
         ): Result {
             if (code == targetTransaction) {
-                logD("intercept pre  $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()}")
+                Logger.d("intercept pre  $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()}")
                 kotlin.runCatching {
                     val ps = getPm()?.getPackagesForUid(callingUid)
                     if (ps?.any { it in targetPackages } == true) return Continue
-                }.onFailure { logE("failed to get packages", it) }
+                }.onFailure { Logger.e("failed to get packages", it) }
             }
             return Skip
         }
@@ -216,7 +202,7 @@ fun tryRunKeystoreInterceptor(): Boolean {
         ): Result {
             if (code != targetTransaction || reply == null) return Skip
             val p = Parcel.obtain()
-            logD("intercept post $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()} replySz=${reply.dataSize()}")
+            Logger.d("intercept post $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()} replySz=${reply.dataSize()}")
             try {
                 reply.readException()
                 val response = reply.readTypedObject(KeyEntryResponse.CREATOR)
@@ -227,7 +213,7 @@ fun tryRunKeystoreInterceptor(): Boolean {
                 p.writeTypedObject(response, 0)
                 return OverrideReply(0, p)
             } catch (t: Throwable) {
-                logE("failed to hack certificate chain!", t)
+                Logger.e("failed to hack certificate chain!", t)
                 p.recycle()
             }
             return Skip
@@ -255,7 +241,7 @@ fun tryRunKeystoreInterceptor(): Boolean {
     }
 }
 
-fun main() {
+fun main(args: Array<String>) {
     while (true) {
         Thread.sleep(1000)
         // true -> can inject, false -> service not found, loop -> running
@@ -271,7 +257,7 @@ fun main() {
         // logD(p.inputStream.readBytes().decodeToString())
         // logD(p.errorStream.readBytes().decodeToString())
         if (p.waitFor() != 0) {
-            logE("failed to inject! daemon exit")
+            Logger.e("failed to inject! daemon exit")
             exitProcess(1)
         }
     }

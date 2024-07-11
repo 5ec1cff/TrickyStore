@@ -19,3 +19,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+-keepclasseswithmembers class io.github.a13e300.tricky_store.MainKt {
+    public static void main(java.lang.String[]);
+}
+
+-assumenosideeffects class io.github.a13e300.tricky_store.Logger {
+    public static void d(java.lang.String);
+}

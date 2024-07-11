@@ -3,7 +3,6 @@ project(sample)
 
 set(LINKER_FLAGS "-ffixed-x18 -Wl,--hash-style=both")
 
-# TODO: set visibility only for our libs (-fvisibility=hidden -fvisibility-inlines-hidden)
 set(CXX_FLAGS "${CXX_FLAGS} -fno-exceptions -fno-rtti")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS}")
@@ -37,6 +36,8 @@ target_link_libraries(binder utils)
 
 add_executable(libinject.so inject/main.cpp inject/utils.cpp)
 target_link_libraries(libinject.so lspmparser my_logging)
+target_compile_options(libinject.so PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
 
 add_library(${MODULE_NAME} SHARED binder_interceptor.cpp)
 target_link_libraries(${MODULE_NAME} log binder utils dobby elf_util my_logging)
+target_compile_options(${MODULE_NAME} PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)

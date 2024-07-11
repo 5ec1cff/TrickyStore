@@ -14,6 +14,12 @@ val verName: String by rootProject.extra
 val commitHash: String by rootProject.extra
 val abiList: List<String> by rootProject.extra
 
+val releaseFlags = arrayOf(
+    "-Oz", "-flto",
+    "-Wno-unused", "-Wno-unused-parameter",
+    "-Wl,--exclude-libs,ALL", "-Wl,--gc-sections",
+)
+
 android {
     defaultConfig {
         ndk {
@@ -32,6 +38,14 @@ android {
     externalNativeBuild {
         cmake {
             path("src/main/cpp/CMakeLists.txt")
+        }
+    }
+    buildTypes {
+        release {
+            externalNativeBuild.cmake {
+                cFlags += releaseFlags
+                cppFlags += releaseFlags
+            }
         }
     }
 }
