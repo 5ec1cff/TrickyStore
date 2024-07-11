@@ -37,43 +37,62 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
+
+import io.github.a13e300.tricky_store.Logger;
 
 public final class Android {
     private static final String TAG = "chiteroman";
-    private static final PEMKeyPair EC, RSA;
     private static final ASN1ObjectIdentifier OID = new ASN1ObjectIdentifier("1.3.6.1.4.1.11129.2.1.17");
-    private static final List<Certificate> EC_CERTS = new ArrayList<>();
-    private static final List<Certificate> RSA_CERTS = new ArrayList<>();
-    private static final Map<String, String> map = new HashMap<>();
+
+    record KeyBox(PEMKeyPair privateKey, List<Certificate> certificates) {}
+    private static final Map<String, KeyBox> keyboxes = new HashMap<>();
+
     private static final CertificateFactory certificateFactory;
 
     static {
-        map.put("MANUFACTURER", "Google");
-        map.put("MODEL", "Pixel");
-        map.put("FINGERPRINT", "google/sailfish/sailfish:8.1.0/OPM1.171019.011/4448085:user/release-keys");
-        map.put("BRAND", "google");
-        map.put("PRODUCT", "sailfish");
-        map.put("DEVICE", "sailfish");
-        map.put("RELEASE", "8.1.0");
-        map.put("ID", "OPM1.171019.011");
-        map.put("INCREMENTAL", "4448085");
-        map.put("SECURITY_PATCH", "2017-12-05");
-        map.put("TYPE", "user");
-        map.put("TAGS", "release-keys");
         try {
             certificateFactory = CertificateFactory.getInstance("X.509");
-
-            EC = parseKeyPair(Keybox.EC.PRIVATE_KEY);
-            EC_CERTS.add(parseCert(Keybox.EC.CERTIFICATE_1));
-            EC_CERTS.add(parseCert(Keybox.EC.CERTIFICATE_2));
-
-            RSA = parseKeyPair(Keybox.RSA.PRIVATE_KEY);
-            RSA_CERTS.add(parseCert(Keybox.RSA.CERTIFICATE_1));
-            RSA_CERTS.add(parseCert(Keybox.RSA.CERTIFICATE_2));
         } catch (Throwable t) {
             Log.e(TAG, t.toString());
             throw new RuntimeException(t);
+        }
+    }
+
+    public static void readFromXml(String data) {
+        keyboxes.clear();
+        XMLParser xmlParser = new XMLParser(data);
+
+        try {
+            int numberOfKeyboxes = Integer.parseInt(Objects.requireNonNull(xmlParser.obtainPath(
+                    "AndroidAttestation.NumberOfKeyboxes").get("text")));
+            for (int i = 0; i < numberOfKeyboxes; i++) {
+                String keyboxAlgorithm = xmlParser.obtainPath(
+                        "AndroidAttestation.Keybox.Key[" + i + "]").get("algorithm");
+                String privateKey = xmlParser.obtainPath(
+                        "AndroidAttestation.Keybox.Key[" + i + "].PrivateKey").get("text");
+                int numberOfCertificates = Integer.parseInt(Objects.requireNonNull(xmlParser.obtainPath(
+                        "AndroidAttestation.Keybox.Key[" + i + "].CertificateChain.NumberOfCertificates").get("text")));
+
+                LinkedList<Certificate> certificateChain = new LinkedList<>();
+
+                for (int j = 0; j < numberOfCertificates; j++) {
+                    Map<String,String> certData= xmlParser.obtainPath(
+                            "AndroidAttestation.Keybox.Key[" + i + "].CertificateChain.Certificate[" + j + "]");
+                    certificateChain.add(parseCert(certData.get("text")));
+                }
+                String algo;
+                if (keyboxAlgorithm.toLowerCase().equals("ecdsa")) {
+                    algo = KeyProperties.KEY_ALGORITHM_EC;
+                } else {
+                    algo = KeyProperties.KEY_ALGORITHM_RSA;
+                }
+                keyboxes.put(algo, new KeyBox(parseKeyPair(privateKey), certificateChain));
+            }
+            Logger.d("update " + numberOfKeyboxes + " keyboxes");
+        } catch (Throwable t) {
+            Logger.e("Error loading xml file: " + t);
         }
     }
 
@@ -104,7 +123,7 @@ public final class Android {
     }
 
     public static Certificate[] engineGetCertificateChain(Certificate[] caList) {
-        if (caList == null) throw new UnsupportedOperationException();
+        if (caList == null) throw new UnsupportedOperationException("caList is null!");
         try {
             X509Certificate leaf = (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(caList[0].getEncoded()));
 
@@ -135,15 +154,12 @@ public final class Android {
             X509v3CertificateBuilder builder;
             ContentSigner signer;
 
-            if (KeyProperties.KEY_ALGORITHM_EC.equals(leaf.getPublicKey().getAlgorithm())) {
-                certificates = new LinkedList<>(EC_CERTS);
-                builder = new X509v3CertificateBuilder(new X509CertificateHolder(EC_CERTS.get(0).getEncoded()).getSubject(), holder.getSerialNumber(), holder.getNotBefore(), holder.getNotAfter(), holder.getSubject(), EC.getPublicKeyInfo());
-                signer = new JcaContentSignerBuilder(leaf.getSigAlgName()).build(new JcaPEMKeyConverter().getPrivateKey(EC.getPrivateKeyInfo()));
-            } else {
-                certificates = new LinkedList<>(RSA_CERTS);
-                builder = new X509v3CertificateBuilder(new X509CertificateHolder(RSA_CERTS.get(0).getEncoded()).getSubject(), holder.getSerialNumber(), holder.getNotBefore(), holder.getNotAfter(), holder.getSubject(), RSA.getPublicKeyInfo());
-                signer = new JcaContentSignerBuilder(leaf.getSigAlgName()).build(new JcaPEMKeyConverter().getPrivateKey(RSA.getPrivateKeyInfo()));
-            }
+            var k = keyboxes.get(leaf.getPublicKey().getAlgorithm());
+            if (k == null) throw new UnsupportedOperationException("unsupported algorithm " + leaf.getPublicKey().getAlgorithm());
+            certificates = new LinkedList<>(k.certificates);
+            builder = new X509v3CertificateBuilder(new X509CertificateHolder(certificates.get(0).getEncoded()).getSubject(), holder.getSerialNumber(), holder.getNotBefore(), holder.getNotAfter(), holder.getSubject(), k.privateKey.getPublicKeyInfo());
+            signer = new JcaContentSignerBuilder(leaf.getSigAlgName()).build(new JcaPEMKeyConverter().getPrivateKey(k.privateKey.getPrivateKeyInfo()));
+
 
             byte[] verifiedBootKey = new byte[32];
             byte[] verifiedBootHash = new byte[32];

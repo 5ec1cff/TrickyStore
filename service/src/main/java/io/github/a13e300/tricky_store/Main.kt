@@ -3,7 +3,9 @@ package io.github.a13e300.tricky_store
 import android.annotation.SuppressLint
 import android.content.pm.IPackageManager
 import android.os.Binder
+import android.os.FileObserver
 import android.os.IBinder
+import android.os.Looper
 import android.os.Parcel
 import android.os.ServiceManager
 import android.system.keystore2.IKeystoreService
@@ -11,6 +13,7 @@ import android.system.keystore2.KeyEntryResponse
 import android.util.Log
 import io.github.a13e300.tricky_store.fwpatch.Android
 import io.github.a13e300.tricky_store.fwpatch.Utils
+import java.io.File
 import kotlin.system.exitProcess
 
 open class BinderInterceptor : Binder() {
@@ -113,7 +116,8 @@ fun registerBinderInterceptor(backdoor: IBinder, target: IBinder, interceptor: B
     backdoor.transact(1, data, reply, 0)
 }
 
-val targetPackages = arrayOf("com.google.android.gms", "icu.nullptr.nativetest", "io.github.vvb2060.mahoshojo", "io.github.vvb2060.keyattestation")
+val targetPackages = mutableSetOf<String>()
+val DEFAULT_TARGET_PACKAGES = listOf("com.google.android.gms", "icu.nullptr.nativetest", "io.github.vvb2060.mahoshojo", "io.github.vvb2060.keyattestation")
 
 const val TAG = "TrickyStore"
 
@@ -136,6 +140,40 @@ fun getPm(): IPackageManager? {
         iPm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"))
     }
     return iPm
+}
+
+fun updateTargetPackages(f: File) = runCatching {
+    targetPackages.clear()
+    f.readLines().mapNotNullTo(targetPackages) {
+        if (it.isNotBlank() && !it.startsWith("#")) it else null
+    }
+    Logger.d("update target packages: $targetPackages")
+}.onFailure {
+    Logger.e("failed to update target files", it)
+}
+
+fun updateKeyBox(f: File) = runCatching {
+    Android.readFromXml(f.readText())
+}.onFailure {
+    Logger.e("failed to update keybox", it)
+}
+
+const val CONFIG_PATH = "/data/adb/tricky_store"
+const val TARGET_FILE = "target.txt"
+const val KEYBOX_FILE = "keybox.xml"
+
+class ConfigObserver : FileObserver(CONFIG_PATH, CLOSE_WRITE) {
+    val root = File(CONFIG_PATH)
+    override fun onEvent(event: Int, path: String?) {
+        path ?: return
+        if (event == CLOSE_WRITE) {
+            val f = File(root, path)
+            when (f.name) {
+                TARGET_FILE -> updateTargetPackages(f)
+                KEYBOX_FILE -> updateKeyBox(f)
+            }
+        }
+    }
 }
 
 @SuppressLint("BlockedPrivateApi")
@@ -195,6 +233,22 @@ fun tryRunKeystoreInterceptor(): Boolean {
             return Skip
         }
     }
+    val path = File(CONFIG_PATH)
+    path.mkdirs()
+    val target = File(path, TARGET_FILE)
+    if (!target.exists()) {
+        target.createNewFile()
+        target.writeText(DEFAULT_TARGET_PACKAGES.joinToString("\n"))
+    }
+    updateTargetPackages(target)
+    val keybox = File(path, KEYBOX_FILE)
+    if (!keybox.exists()) {
+        Logger.e("keybox file not found, please put it to $keybox !")
+    } else {
+        updateKeyBox(keybox)
+    }
+    val monitor = ConfigObserver()
+    monitor.startWatching()
     registerBinderInterceptor(bd, b, interceptor)
     while (true) {
         Thread.sleep(1000000)
