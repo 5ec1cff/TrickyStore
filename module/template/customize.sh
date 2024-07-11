@@ -57,29 +57,18 @@ ui_print "- Extracting module files"
 extract "$ZIPFILE" 'module.prop'     "$MODPATH"
 extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
 extract "$ZIPFILE" 'service.sh'      "$MODPATH"
+extract "$ZIPFILE" 'service.apk'     "$MODPATH"
 mv "$TMPDIR/sepolicy.rule" "$MODPATH"
 
-HAS32BIT=false && [ $(getprop ro.product.cpu.abilist32) ] && HAS32BIT=true
-
-mkdir "$MODPATH/zygisk"
-
-if [ "$ARCH" = "x86" ] || [ "$ARCH" = "x64" ]; then
-  if [ "$HAS32BIT" = true ]; then
-    ui_print "- Extracting x86 libraries"
-    extract "$ZIPFILE" "lib/x86/lib$SONAME.so" "$MODPATH/zygisk/" true
-    mv "$MODPATH/zygisk/lib$SONAME.so" "$MODPATH/zygisk/x86.so"
-  fi
-
+if [ "$ARCH" = "x64" ]; then
   ui_print "- Extracting x64 libraries"
-  extract "$ZIPFILE" "lib/x86_64/lib$SONAME.so" "$MODPATH/zygisk" true
-  mv "$MODPATH/zygisk/lib$SONAME.so" "$MODPATH/zygisk/x86_64.so"
+  extract "$ZIPFILE" "lib/x86_64/lib$SONAME.so" "$MODPATH" true
+  extract "$ZIPFILE" "lib/x86_64/libinject.so" "$MODPATH" true
 else
-  if [ "$HAS32BIT" = true ]; then
-    extract "$ZIPFILE" "lib/armeabi-v7a/lib$SONAME.so" "$MODPATH/zygisk" true
-    mv "$MODPATH/zygisk/lib$SONAME.so" "$MODPATH/zygisk/armeabi-v7a.so"
-  fi
-
   ui_print "- Extracting arm64 libraries"
-  extract "$ZIPFILE" "lib/arm64-v8a/lib$SONAME.so" "$MODPATH/zygisk" true
-  mv "$MODPATH/zygisk/lib$SONAME.so" "$MODPATH/zygisk/arm64-v8a.so"
+  extract "$ZIPFILE" "lib/arm64-v8a/lib$SONAME.so" "$MODPATH" true
+  extract "$ZIPFILE" "lib/arm64-v8a/libinject.so" "$MODPATH" true
 fi
+
+mv "$MODPATH/libinject.so" "$MODPATH/inject"
+chmod 755 "$MODPATH/inject"

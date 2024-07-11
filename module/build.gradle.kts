@@ -57,7 +57,7 @@ androidComponents.onVariants { variant ->
 
         val prepareModuleFilesTask = task<Sync>("prepareModuleFiles$variantCapped") {
             group = "module"
-            dependsOn("assemble$variantCapped")
+            dependsOn("assemble$variantCapped", ":service:assemble$variantCapped")
             into(moduleDir)
             from(rootProject.layout.projectDirectory.file("README.md"))
             from(layout.projectDirectory.file("template")) {
@@ -83,7 +83,11 @@ androidComponents.onVariants { variant ->
                 filter<ReplaceTokens>("tokens" to tokens)
                 filter<FixCrLfFilter>("eol" to FixCrLfFilter.CrLf.newInstance("lf"))
             }
+            from(project(":service").layout.buildDirectory.file("outputs/apk/$variantLowered/service-$variantLowered.apk")) {
+                rename { "service.apk" }
+            }
             from(layout.buildDirectory.file("intermediates/stripped_native_libs/$variantLowered/strip${variantCapped}DebugSymbols/out/lib")) {
+                exclude("**/libbinder.so", "**/libutils.so")
                 into("lib")
             }
 

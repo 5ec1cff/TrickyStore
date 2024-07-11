@@ -35,5 +35,8 @@ add_library(binder SHARED binder/stub_binder.cpp)
 target_include_directories(binder PUBLIC binder/include)
 target_link_libraries(binder utils)
 
+add_executable(libinject.so inject/main.cpp inject/utils.cpp)
+target_link_libraries(libinject.so lspmparser my_logging)
+
 add_library(${MODULE_NAME} SHARED binder_interceptor.cpp)
 target_link_libraries(${MODULE_NAME} log binder utils dobby elf_util my_logging)

@@ -18,3 +18,5 @@ rootProject.name = "TrickyStore"
 include(
     ":module"
 )
+include(":service")
+include(":stub")

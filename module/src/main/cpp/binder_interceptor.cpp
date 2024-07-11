@@ -62,7 +62,7 @@ CREATE_MEM_HOOK_STUB_ENTRY(
         {
             LOGD("transact: binder=%p code=%d", thiz, code);
             if (IPCThreadState::self()->getCallingUid() == 0 && reply != nullptr &&
-                thiz != gBinderInterceptor) {
+                thiz != gBinderInterceptor) [[unlikely]] {
                 if (code == 0xdeadbeef) {
                     LOGD("request binder interceptor");
                     reply->writeStrongBinder(gBinderInterceptor);
@@ -128,6 +128,7 @@ BinderInterceptor::onTransact(uint32_t code, const android::Parcel &data, androi
                 items.erase(it);
                 return OK;
             }
+            return BAD_VALUE;
         }
     }
     return UNKNOWN_TRANSACTION;
