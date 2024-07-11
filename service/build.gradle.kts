@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.Packaging
+
 plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.agp.app)
@@ -29,10 +31,15 @@ android {
             signingConfig = signingConfigs["debug"]
         }
     }
+    packaging {
+        resources {
+            excludes += "**"
+        }
+    }
 }
 
 dependencies {
     compileOnly(project(":stub"))
     compileOnly(libs.annotation)
-    implementation(libs.bcpkix.jdk15on)
+    implementation(libs.bcpkix.jdk18on)
 }

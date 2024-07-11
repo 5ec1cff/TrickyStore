@@ -1,12 +1,12 @@
 [versions]
 agp = "8.5.0"
+bcpkix-jdk18on = "1.78.1"
 kotlin = "2.0.0"
 annotation = "1.8.0"
-bcpkix-jdk15on = "1.58.0.0"
 
 [libraries]
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
-bcpkix-jdk15on = { module = "com.madgag.spongycastle:bcpkix-jdk15on", version.ref = "bcpkix-jdk15on" }
+bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bcpkix-jdk18on" }
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }

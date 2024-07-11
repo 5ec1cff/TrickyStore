@@ -4,27 +4,27 @@ import android.os.Build;
 import android.security.keystore.KeyProperties;
 import android.util.Log;
 
-import org.spongycastle.asn1.ASN1Boolean;
-import org.spongycastle.asn1.ASN1Encodable;
-import org.spongycastle.asn1.ASN1EncodableVector;
-import org.spongycastle.asn1.ASN1Enumerated;
-import org.spongycastle.asn1.ASN1ObjectIdentifier;
-import org.spongycastle.asn1.ASN1OctetString;
-import org.spongycastle.asn1.ASN1Sequence;
-import org.spongycastle.asn1.ASN1TaggedObject;
-import org.spongycastle.asn1.DEROctetString;
-import org.spongycastle.asn1.DERSequence;
-import org.spongycastle.asn1.DERTaggedObject;
-import org.spongycastle.asn1.x509.Extension;
-import org.spongycastle.cert.X509CertificateHolder;
-import org.spongycastle.cert.X509v3CertificateBuilder;
-import org.spongycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.spongycastle.openssl.PEMKeyPair;
-import org.spongycastle.openssl.PEMParser;
-import org.spongycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.spongycastle.operator.ContentSigner;
-import org.spongycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.spongycastle.util.io.pem.PemReader;
+import org.bouncycastle.asn1.ASN1Boolean;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Enumerated;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1TaggedObject;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.DERTaggedObject;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.util.io.pem.PemReader;
 
 import java.io.ByteArrayInputStream;
 import java.io.StringReader;
@@ -106,20 +106,6 @@ public final class Android {
         try (PemReader reader = new PemReader(new StringReader(cert))) {
             return certificateFactory.generateCertificate(new ByteArrayInputStream(reader.readPemObject().getContent()));
         }
-    }
-
-    private static Field getField(String fieldName) {
-        Field field = null;
-        try {
-            field = Build.class.getDeclaredField(fieldName);
-        } catch (Throwable ignored) {
-            try {
-                field = Build.VERSION.class.getDeclaredField(fieldName);
-            } catch (Throwable t) {
-                Log.e(TAG, "Couldn't find field " + fieldName);
-            }
-        }
-        return field;
     }
 
     public static Certificate[] engineGetCertificateChain(Certificate[] caList) {
