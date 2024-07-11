@@ -55,6 +55,10 @@ public final class CertHack {
         }
     }
 
+    public static boolean canHack() {
+        return !keyboxes.isEmpty();
+    }
+
     public static void readFromXml(String data) {
         keyboxes.clear();
         if (data == null) {
@@ -91,7 +95,7 @@ public final class CertHack {
             }
             Logger.i("update " + numberOfKeyboxes + " keyboxes");
         } catch (Throwable t) {
-            Logger.e("Error loading xml file: " + t);
+            Logger.e("Error loading xml file (keyboxes cleared): " + t);
         }
     }
 

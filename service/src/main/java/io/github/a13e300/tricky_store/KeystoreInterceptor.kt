@@ -33,7 +33,7 @@ object KeystoreInterceptor  : BinderInterceptor() {
         callingPid: Int,
         data: Parcel
     ): Result {
-        if (code == targetTransaction) {
+        if (code == targetTransaction && CertHack.canHack() && Config.targetPackages.isNotEmpty()) {
             Logger.d("intercept pre  $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()}")
             kotlin.runCatching {
                 val ps = getPm()?.getPackagesForUid(callingUid)

@@ -34,12 +34,12 @@ object Config {
     private const val KEYBOX_FILE = "keybox.xml"
     private val root = File(CONFIG_PATH)
 
-    object ConfigObserver : FileObserver(root, CLOSE_WRITE or DELETE) {
+    object ConfigObserver : FileObserver(root, CLOSE_WRITE or DELETE or MOVED_FROM or MOVED_TO) {
         override fun onEvent(event: Int, path: String?) {
             path ?: return
             val f = when (event) {
-                CLOSE_WRITE -> File(root, path)
-                DELETE -> null
+                CLOSE_WRITE, MOVED_TO -> File(root, path)
+                DELETE, MOVED_FROM -> null
                 else -> return
             }
             when (path) {
