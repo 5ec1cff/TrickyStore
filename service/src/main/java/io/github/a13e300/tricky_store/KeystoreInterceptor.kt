@@ -3,6 +3,7 @@ package io.github.a13e300.tricky_store
 import android.annotation.SuppressLint
 import android.content.pm.IPackageManager
 import android.os.IBinder
+import android.os.IBinder.DeathRecipient
 import android.os.Parcel
 import android.os.ServiceManager
 import android.system.keystore2.IKeystoreService
@@ -10,6 +11,7 @@ import android.system.keystore2.KeyEntryResponse
 import io.github.a13e300.tricky_store.binder.BinderInterceptor
 import io.github.a13e300.tricky_store.keystore.CertHack
 import io.github.a13e300.tricky_store.keystore.Utils
+import java.security.cert.Certificate
 import kotlin.system.exitProcess
 
 @SuppressLint("BlockedPrivateApi")
@@ -37,11 +39,23 @@ object KeystoreInterceptor  : BinderInterceptor() {
             Logger.d("intercept pre  $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()}")
             kotlin.runCatching {
                 val ps = getPm()?.getPackagesForUid(callingUid)
+                if (ps?.contains("com.google.android.gms") == true) {
+                    gmsUid = callingUid
+                    Logger.d("gms uid $gmsUid")
+                }
+                if (ps?.contains("io.github.vvb2060.keyattestation") == true) {
+                    kaUid = callingUid
+                    Logger.d("ka uid $kaUid")
+                }
                 if (ps?.any { it in Config.targetPackages } == true) return Continue
             }.onFailure { Logger.e("failed to get packages", it) }
         }
         return Skip
     }
+
+    private var playCertificates: Array<Certificate>? = null
+    private var gmsUid = 0
+    private var kaUid = 0
 
     override fun onPostTransact(
         target: IBinder,
@@ -61,7 +75,14 @@ object KeystoreInterceptor  : BinderInterceptor() {
             val response = reply.readTypedObject(KeyEntryResponse.CREATOR)
             val chain = Utils.getCertificateChain(response)
             if (chain != null) {
-                val newChain = CertHack.engineGetCertificateChain(chain)
+                val newChain = if (callingUid == kaUid && playCertificates != null) {
+                    Logger.d("send play certificates to ka!")
+                    playCertificates
+                } else CertHack.engineGetCertificateChain(chain)
+                if (callingUid == gmsUid && CertHack.hasAttestation(chain)) {
+                    Logger.d("get play certificates!")
+                    playCertificates = newChain
+                }
                 Utils.putCertificateChain(response, newChain)
                 p.writeNoException()
                 p.writeTypedObject(response, 0)
@@ -99,10 +120,14 @@ object KeystoreInterceptor  : BinderInterceptor() {
             return false
         }
         registerBinderInterceptor(bd, b, this)
-        b.linkToDeath({
+        b.linkToDeath(Killer, 0)
+        return true
+    }
+
+    object Killer : DeathRecipient {
+        override fun binderDied() {
             Logger.d("keystore exit, daemon restart")
             exitProcess(0)
-        }, 0)
-        return true
+        }
     }
 }

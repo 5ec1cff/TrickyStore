@@ -111,6 +111,17 @@ public final class CertHack {
         }
     }
 
+    public static boolean hasAttestation(Certificate[] caList) {
+        if (caList == null) return false;
+        try {
+            X509Certificate leaf = (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(caList[0].getEncoded()));
+            byte[] bytes = leaf.getExtensionValue(OID.getId());
+            return bytes != null;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public static Certificate[] engineGetCertificateChain(Certificate[] caList) {
         if (caList == null) throw new UnsupportedOperationException("caList is null!");
         try {
