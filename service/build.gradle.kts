@@ -65,7 +65,7 @@ androidComponents.onVariants { variant ->
                     commandLine(
                         "adb",
                         "shell",
-                        "su -c \"mv /data/local/tmp/service.apk /data/adb/modules/tricky_store/\""
+                        "su -c 'rm /data/adb/modules/tricky_store/service.apk; mv /data/local/tmp/service.apk /data/adb/modules/tricky_store/'"
                     )
                 }
             }
