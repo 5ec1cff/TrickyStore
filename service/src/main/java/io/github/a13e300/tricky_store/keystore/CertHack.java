@@ -28,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.StringReader;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -111,76 +112,106 @@ public final class CertHack {
         }
     }
 
+    private static byte[] getByteArrayFromAsn1(ASN1Encodable asn1Encodable) throws CertificateParsingException {
+        if (!(asn1Encodable instanceof DEROctetString derOctectString)) {
+            throw new CertificateParsingException("Expected DEROctetString");
+        }
+        return derOctectString.getOctets();
+    }
+
     public static Certificate[] engineGetCertificateChain(Certificate[] caList) {
         if (caList == null) throw new UnsupportedOperationException("caList is null!");
         try {
             X509Certificate leaf = (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(caList[0].getEncoded()));
-
             byte[] bytes = leaf.getExtensionValue(OID.getId());
-
             if (bytes == null) return caList;
 
             X509CertificateHolder holder = new X509CertificateHolder(leaf.getEncoded());
-
             Extension ext = holder.getExtension(OID);
-
             ASN1Sequence sequence = ASN1Sequence.getInstance(ext.getExtnValue().getOctets());
-
             ASN1Encodable[] encodables = sequence.toArray();
-
             ASN1Sequence teeEnforced = (ASN1Sequence) encodables[7];
-
             ASN1EncodableVector vector = new ASN1EncodableVector();
+            ASN1Encodable rootOfTrust = null;
 
             for (ASN1Encodable asn1Encodable : teeEnforced) {
                 ASN1TaggedObject taggedObject = (ASN1TaggedObject) asn1Encodable;
-                if (taggedObject.getTagNo() == 704) continue;
+                if (taggedObject.getTagNo() == 704) {
+                    rootOfTrust = taggedObject.getBaseObject().toASN1Primitive();
+                    continue;
+                }
                 vector.add(taggedObject);
             }
 
             LinkedList<Certificate> certificates;
-
             X509v3CertificateBuilder builder;
             ContentSigner signer;
 
             var k = keyboxes.get(leaf.getPublicKey().getAlgorithm());
             if (k == null) throw new UnsupportedOperationException("unsupported algorithm " + leaf.getPublicKey().getAlgorithm());
             certificates = new LinkedList<>(k.certificates);
-            builder = new X509v3CertificateBuilder(new X509CertificateHolder(certificates.get(0).getEncoded()).getSubject(), holder.getSerialNumber(), holder.getNotBefore(), holder.getNotAfter(), holder.getSubject(), k.privateKey.getPublicKeyInfo());
-            signer = new JcaContentSignerBuilder(leaf.getSigAlgName()).build(new JcaPEMKeyConverter().getPrivateKey(k.privateKey.getPrivateKeyInfo()));
+            builder = new X509v3CertificateBuilder(
+                    new X509CertificateHolder(
+                            certificates.get(0).getEncoded()
+                    ).getSubject(),
+                    holder.getSerialNumber(),
+                    holder.getNotBefore(),
+                    holder.getNotAfter(),
+                    holder.getSubject(),
+                    k.privateKey.getPublicKeyInfo()
+            );
+            signer = new JcaContentSignerBuilder(leaf.getSigAlgName())
+                    .build(
+                            new JcaPEMKeyConverter()
+                                    .getPrivateKey(k.privateKey.getPrivateKeyInfo()
+                                    )
+                    );
 
+            byte[] verifiedBootKey = null;
+            byte[] verifiedBootHash = null;
+            try {
+                if (!(rootOfTrust instanceof ASN1Sequence r)) {
+                    throw new CertificateParsingException("Expected sequence for root of trust, found "
+                            + rootOfTrust.getClass().getName());
+                }
+                verifiedBootKey = getByteArrayFromAsn1(r.getObjectAt(0));
+                verifiedBootHash = getByteArrayFromAsn1(r.getObjectAt(3));
+            } catch (Throwable t) {
+                Logger.e("failed to get verified boot key or hash from original, use randomly generated instead", t);
+            }
 
-            byte[] verifiedBootKey = new byte[32];
-            byte[] verifiedBootHash = new byte[32];
+            if (verifiedBootKey == null) {
+                verifiedBootKey = new byte[32];
+                ThreadLocalRandom.current().nextBytes(verifiedBootKey);
+            }
+            if (verifiedBootHash == null) {
+                verifiedBootHash = new byte[32];
+                ThreadLocalRandom.current().nextBytes(verifiedBootHash);
+            }
 
-            ThreadLocalRandom.current().nextBytes(verifiedBootKey);
-            ThreadLocalRandom.current().nextBytes(verifiedBootHash);
+            ASN1Encodable[] rootOfTrustEnc = {
+                    new DEROctetString(verifiedBootKey),
+                    ASN1Boolean.TRUE,
+                    new ASN1Enumerated(0),
+                    new DEROctetString(verifiedBootHash)
+            };
 
-            ASN1Encodable[] rootOfTrustEnc = {new DEROctetString(verifiedBootKey), ASN1Boolean.TRUE, new ASN1Enumerated(0), new DEROctetString(verifiedBootHash)};
-
-            ASN1Sequence rootOfTrustSeq = new DERSequence(rootOfTrustEnc);
-
-            ASN1TaggedObject rootOfTrustTagObj = new DERTaggedObject(704, rootOfTrustSeq);
-
+            ASN1Sequence hackedRootOfTrust = new DERSequence(rootOfTrustEnc);
+            ASN1TaggedObject rootOfTrustTagObj = new DERTaggedObject(704, hackedRootOfTrust);
             vector.add(rootOfTrustTagObj);
 
             ASN1Sequence hackEnforced = new DERSequence(vector);
-
             encodables[7] = hackEnforced;
-
             ASN1Sequence hackedSeq = new DERSequence(encodables);
 
             ASN1OctetString hackedSeqOctets = new DEROctetString(hackedSeq);
-
             Extension hackedExt = new Extension(OID, false, hackedSeqOctets);
-
             builder.addExtension(hackedExt);
 
             for (ASN1ObjectIdentifier extensionOID : holder.getExtensions().getExtensionOIDs()) {
                 if (OID.getId().equals(extensionOID.getId())) continue;
                 builder.addExtension(holder.getExtension(extensionOID));
             }
-
             certificates.addFirst(new JcaX509CertificateConverter().getCertificate(builder.build(signer)));
 
             return certificates.toArray(new Certificate[0]);
