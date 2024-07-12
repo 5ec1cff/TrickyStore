@@ -1,4 +1,4 @@
-import com.android.build.api.dsl.Packaging
+import android.databinding.tool.ext.capitalizeUS
 
 plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -42,4 +42,43 @@ dependencies {
     compileOnly(project(":stub"))
     compileOnly(libs.annotation)
     implementation(libs.bcpkix.jdk18on)
+}
+
+androidComponents.onVariants { variant ->
+    afterEvaluate {
+        val variantLowered = variant.name.lowercase()
+        val variantCapped = variant.name.capitalizeUS()
+        val pushTask = task<Task>("pushService$variantCapped") {
+            group = "Service"
+            dependsOn("assemble$variantCapped")
+            doLast {
+                exec {
+                    commandLine(
+                        "adb",
+                        "push",
+                        layout.buildDirectory.file("outputs/apk/$variantLowered/service-$variantLowered.apk")
+                            .get().asFile.absolutePath,
+                        "/data/local/tmp/service.apk"
+                    )
+                }
+                exec {
+                    commandLine(
+                        "adb",
+                        "shell",
+                        "su -c \"mv /data/local/tmp/service.apk /data/adb/modules/tricky_store/\""
+                    )
+                }
+            }
+        }
+
+        task<Task>("pushAndRestartService$variantCapped") {
+            group = "Service"
+            dependsOn(pushTask)
+            doLast {
+                exec {
+                    commandLine("adb", "shell", "su -c \"setprop ctl.restart keystore2\"")
+                }
+            }
+        }
+    }
 }
