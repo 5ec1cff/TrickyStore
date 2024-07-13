@@ -4,7 +4,6 @@ import android.os.Binder
 import android.os.IBinder
 import android.os.Parcel
 
-
 open class BinderInterceptor : Binder() {
     sealed class Result
     data object Skip : Result()
@@ -91,7 +90,6 @@ open class BinderInterceptor : Binder() {
                 reply!!.writeInt(3)
                 reply.writeInt(result.code)
                 reply.writeLong(result.reply.dataSize().toLong())
-                println("override reply code=${result.code} size=${result.reply.dataSize()}")
                 reply.appendFrom(result.reply, 0, result.reply.dataSize())
                 result.reply.recycle()
             }
@@ -101,7 +99,6 @@ open class BinderInterceptor : Binder() {
                 reply.appendFrom(result.data, 0, result.data.dataSize())
                 result.data.recycle()
             }
-            else -> {}
         }
         return true
     }
