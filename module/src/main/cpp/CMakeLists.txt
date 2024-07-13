@@ -41,3 +41,7 @@ target_compile_options(libinject.so PRIVATE -fvisibility=hidden -fvisibility-inl
 add_library(${MODULE_NAME} SHARED binder_interceptor.cpp)
 target_link_libraries(${MODULE_NAME} log binder utils dobby elf_util my_logging)
 target_compile_options(${MODULE_NAME} PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
+
+add_library(tszygisk SHARED zygisk/main.cpp)
+target_link_libraries(tszygisk log my_logging)
+target_compile_options(tszygisk PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
