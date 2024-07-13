@@ -20,6 +20,16 @@ public:
     }
 
     void preAppSpecialize(AppSpecializeArgs *args) override {
+        int enabled = 0;
+        api_->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
+        {
+            auto fd = api_->connectCompanion();
+            if (fd >= 0) {
+                read(fd, &enabled, sizeof(enabled));
+                close(fd);
+            }
+        }
+        if (!enabled) return;
         const char *process = env_->GetStringUTFChars(args->nice_name, nullptr);
         if (process == "com.google.android.gms.unstable"sv) {
             LOGI("spoofing build vars in %s!", process);
@@ -45,7 +55,6 @@ public:
             SET_FIELD(buildClass, "TAGS", "release-keys");
         }
         env_->ReleaseStringUTFChars(args->nice_name, process);
-        api_->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
     }
 
     void preServerSpecialize(ServerSpecializeArgs *args) override {
@@ -57,6 +66,12 @@ private:
     JNIEnv *env_;
 };
 
+static void companion_handler(int fd) {
+    int enabled = access("/data/adb/modules/tricky_store/spoof_build_vars", F_OK) == 0;
+    write(fd, &enabled, sizeof(enabled));
+}
+
 // Register our module class and the companion handler function
 REGISTER_ZYGISK_MODULE(TrickyStore)
-// REGISTER_ZYGISK_COMPANION(companion_handler)
+
+REGISTER_ZYGISK_COMPANION(companion_handler)
