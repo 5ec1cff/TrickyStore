@@ -41,7 +41,7 @@ format:
 ## Build Vars Spoofing
 
 If you can not pass strong integrity, you can try to enable build vars spoofing
-by creating a file in `/data/adb/modules/tricky_store/spoof_build_vars`.
+by creating a file in `/data/adb/tricky_store/spoof_build_vars`.
 
 Zygisk (or Zygisk Next) is needed for this feature to work.
 

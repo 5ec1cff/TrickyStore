@@ -67,7 +67,7 @@ private:
 };
 
 static void companion_handler(int fd) {
-    int enabled = access("/data/adb/modules/tricky_store/spoof_build_vars", F_OK) == 0;
+    int enabled = access("/data/adb/tricky_store/spoof_build_vars", F_OK) == 0;
     write(fd, &enabled, sizeof(enabled));
 }
 
