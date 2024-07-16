@@ -59,3 +59,4 @@ fun IPackageManager.getPackageInfoCompat(name: String, flags: Long, userId: Int)
         getPackageInfo(name, flags.toInt(), userId)
     }
 
+fun String.trimLine() = trim().split("\n").joinToString("\n") { it.trim() }

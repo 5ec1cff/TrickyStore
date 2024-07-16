@@ -97,13 +97,13 @@ public final class CertHack {
     }
 
     private static PEMKeyPair parseKeyPair(String key) throws Throwable {
-        try (PEMParser parser = new PEMParser(new StringReader(key))) {
+        try (PEMParser parser = new PEMParser(new StringReader(UtilKt.trimLine(key)))) {
             return (PEMKeyPair) parser.readObject();
         }
     }
 
     private static Certificate parseCert(String cert) throws Throwable {
-        try (PemReader reader = new PemReader(new StringReader(cert))) {
+        try (PemReader reader = new PemReader(new StringReader(UtilKt.trimLine(cert)))) {
             return certificateFactory.generateCertificate(new ByteArrayInputStream(reader.readPemObject().getContent()));
         }
     }
