@@ -13,6 +13,7 @@ val verCode: Int by rootProject.extra
 val verName: String by rootProject.extra
 val commitHash: String by rootProject.extra
 val abiList: List<String> by rootProject.extra
+val androidMinSdkVersion: Int by rootProject.extra
 
 val releaseFlags = arrayOf(
     "-Oz", "-flto",
@@ -92,7 +93,8 @@ androidComponents.onVariants { variant ->
                 val tokens = mapOf(
                     "DEBUG" to if (buildTypeLowered == "debug") "true" else "false",
                     "SONAME" to moduleId,
-                    "SUPPORTED_ABIS" to supportedAbis
+                    "SUPPORTED_ABIS" to supportedAbis,
+                    "MIN_SDK" to androidMinSdkVersion.toString()
                 )
                 filter<ReplaceTokens>("tokens" to tokens)
                 filter<FixCrLfFilter>("eol" to FixCrLfFilter.CrLf.newInstance("lf"))

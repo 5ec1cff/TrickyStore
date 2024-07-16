@@ -4,6 +4,7 @@ SKIPUNZIP=1
 DEBUG=@DEBUG@
 SONAME=@SONAME@
 SUPPORTED_ABIS="@SUPPORTED_ABIS@"
+MIN_SDK=@MIN_SDK@
 
 if [ "$BOOTMODE" ] && [ "$KSU" ]; then
   ui_print "- Installing from KernelSU app"
@@ -38,6 +39,14 @@ if [ "$support" == "false" ]; then
   abort "! Unsupported platform: $ARCH"
 else
   ui_print "- Device platform: $ARCH"
+fi
+
+# check android
+if [ "$API" -lt $MIN_SDK ]; then
+  ui_print "! Unsupported sdk: $API"
+  abort "! Minimal supported sdk is $MIN_SDK"
+else
+  ui_print "- Device sdk: $API"
 fi
 
 ui_print "- Extracting verify.sh"
