@@ -208,7 +208,6 @@ public final class CertHack {
                     throw new CertificateParsingException("Expected sequence for root of trust, found "
                             + rootOfTrust.getClass().getName());
                 }
-                verifiedBootKey = getByteArrayFromAsn1(r.getObjectAt(0));
                 verifiedBootHash = getByteArrayFromAsn1(r.getObjectAt(3));
             } catch (Throwable t) {
                 Logger.e("failed to get verified boot key or hash from original, use randomly generated instead", t);
