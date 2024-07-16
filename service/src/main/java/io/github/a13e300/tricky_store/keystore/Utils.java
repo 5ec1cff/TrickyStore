@@ -1,6 +1,7 @@
 package io.github.a13e300.tricky_store.keystore;
 
 import android.system.keystore2.KeyEntryResponse;
+import android.system.keystore2.KeyMetadata;
 import android.util.Log;
 
 import java.io.ByteArrayInputStream;
@@ -58,12 +59,16 @@ public class Utils {
     }
 
     public static void putCertificateChain(KeyEntryResponse response, Certificate[] chain) throws Throwable {
+        putCertificateChain(response.metadata, chain);
+    }
+
+    public static void putCertificateChain(KeyMetadata metadata, Certificate[] chain) throws Throwable {
         if (chain == null || chain.length == 0) return;
-        response.metadata.certificate = chain[0].getEncoded();
+        metadata.certificate = chain[0].getEncoded();
         var output = new ByteArrayOutputStream();
         for (int i = 1; i < chain.length; i++) {
             output.write(chain[i].getEncoded());
         }
-        response.metadata.certificateChain = output.toByteArray();
+        metadata.certificateChain = output.toByteArray();
     }
 }

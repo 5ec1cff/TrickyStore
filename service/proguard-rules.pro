@@ -26,3 +26,8 @@
 -assumenosideeffects class io.github.a13e300.tricky_store.Logger {
     public static void d(java.lang.String);
 }
+
+# keep these or bouncycastle will not work
+-keep class org.bouncycastle.jcajce.provider.** { *; }
+-keep class org.bouncycastle.jce.provider.** { *; }
+-dontwarn javax.naming.**

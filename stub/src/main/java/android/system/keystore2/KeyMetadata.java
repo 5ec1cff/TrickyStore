@@ -6,16 +6,12 @@ import android.os.Parcelable;
 import androidx.annotation.NonNull;
 
 public class KeyMetadata implements Parcelable {
-    // public Authorization[] authorizations;
+    public Authorization[] authorizations;
     public byte[] certificate;
     public byte[] certificateChain;
     public KeyDescriptor key;
     public int keySecurityLevel = 0;
     public long modificationTimeMs = 0;
-
-    protected KeyMetadata(Parcel in) {
-        throw new RuntimeException("");
-    }
 
     public static final Creator<KeyMetadata> CREATOR = new Creator<KeyMetadata>() {
         @Override

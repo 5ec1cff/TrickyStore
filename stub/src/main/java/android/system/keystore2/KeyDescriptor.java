@@ -11,19 +11,15 @@ public class KeyDescriptor implements Parcelable {
     public int domain = 0;
     public long nspace = 0;
 
-    protected KeyDescriptor(Parcel in) {
-        throw new RuntimeException("");
-    }
-
     public static final Creator<KeyDescriptor> CREATOR = new Creator<KeyDescriptor>() {
         @Override
         public KeyDescriptor createFromParcel(Parcel in) {
-            return new KeyDescriptor(in);
+            throw new RuntimeException();
         }
 
         @Override
         public KeyDescriptor[] newArray(int size) {
-            return new KeyDescriptor[size];
+            throw new RuntimeException();
         }
     };
 

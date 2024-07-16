@@ -1,11 +1,14 @@
 package io.github.a13e300.tricky_store
 
+import android.content.pm.IPackageManager
 import android.os.FileObserver
+import android.os.ServiceManager
 import io.github.a13e300.tricky_store.keystore.CertHack
 import java.io.File
 
 object Config {
-    val targetPackages = mutableSetOf<String>()
+    private val hackPackages = mutableSetOf<String>()
+    private val generatePackages = mutableSetOf<String>()
     private val DEFAULT_TARGET_PACKAGES = listOf(
         "com.google.android.gms",
         "icu.nullptr.nativetest",
@@ -14,11 +17,16 @@ object Config {
     )
 
     private fun updateTargetPackages(f: File?) = runCatching {
-        targetPackages.clear()
-        f?.readLines()?.mapNotNullTo(targetPackages) {
-            if (it.isNotBlank() && !it.startsWith("#")) it else null
+        hackPackages.clear()
+        generatePackages.clear()
+        f?.readLines()?.forEach {
+            if (it.isNotBlank() && !it.startsWith("#")) {
+                val n = it.trim()
+                if (n.endsWith("!")) generatePackages.add(n.removeSuffix("!").trim())
+                else hackPackages.add(n)
+            }
         }
-        Logger.i("update target packages: $targetPackages")
+        Logger.i("update hack packages: $hackPackages, generate packages=$generatePackages")
     }.onFailure {
         Logger.e("failed to update target files", it)
     }
@@ -65,4 +73,25 @@ object Config {
         }
         ConfigObserver.startWatching()
     }
+
+    private var iPm: IPackageManager? = null
+
+    fun getPm(): IPackageManager? {
+        if (iPm == null) {
+            iPm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"))
+        }
+        return iPm
+    }
+
+    fun needHack(callingUid: Int) = kotlin.runCatching {
+        if (hackPackages.isEmpty()) return false
+        val ps = getPm()?.getPackagesForUid(callingUid)
+        ps?.any { it in hackPackages }
+    }.onFailure { Logger.e("failed to get packages", it) }.getOrNull() ?: false
+
+    fun needGenerate(callingUid: Int) = kotlin.runCatching {
+        if (generatePackages.isEmpty()) return false
+        val ps = getPm()?.getPackagesForUid(callingUid)
+        ps?.any { it in generatePackages }
+    }.onFailure { Logger.e("failed to get packages", it) }.getOrNull() ?: false
 }

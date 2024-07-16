@@ -1,11 +1,12 @@
 package io.github.a13e300.tricky_store
 
 import android.annotation.SuppressLint
-import android.content.pm.IPackageManager
+import android.hardware.security.keymint.SecurityLevel
 import android.os.IBinder
 import android.os.Parcel
 import android.os.ServiceManager
 import android.system.keystore2.IKeystoreService
+import android.system.keystore2.KeyDescriptor
 import android.system.keystore2.KeyEntryResponse
 import io.github.a13e300.tricky_store.binder.BinderInterceptor
 import io.github.a13e300.tricky_store.keystore.CertHack
@@ -13,17 +14,14 @@ import io.github.a13e300.tricky_store.keystore.Utils
 import kotlin.system.exitProcess
 
 @SuppressLint("BlockedPrivateApi")
-object KeystoreInterceptor  : BinderInterceptor() {
-    private val targetTransaction = IKeystoreService.Stub::class.java.getDeclaredField("TRANSACTION_getKeyEntry").apply { isAccessible = true }.getInt(null) // 2
+object KeystoreInterceptor : BinderInterceptor() {
+    private val getKeyEntryTransaction =
+        getTransactCode(IKeystoreService.Stub::class.java, "getKeyEntry") // 2
 
-    private var iPm: IPackageManager? = null
+    private lateinit var keystore: IBinder
 
-    private fun getPm(): IPackageManager? {
-        if (iPm == null) {
-            iPm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"))
-        }
-        return iPm
-    }
+    private var teeInterceptor: SecurityLevelInterceptor? = null
+    private var strongBoxInterceptor: SecurityLevelInterceptor? = null
 
     override fun onPreTransact(
         target: IBinder,
@@ -33,12 +31,26 @@ object KeystoreInterceptor  : BinderInterceptor() {
         callingPid: Int,
         data: Parcel
     ): Result {
-        if (code == targetTransaction && CertHack.canHack() && Config.targetPackages.isNotEmpty()) {
-            Logger.d("intercept pre  $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()}")
-            kotlin.runCatching {
-                val ps = getPm()?.getPackagesForUid(callingUid)
-                if (ps?.any { it in Config.targetPackages } == true) return Continue
-            }.onFailure { Logger.e("failed to get packages", it) }
+        if (code == getKeyEntryTransaction) {
+            if (CertHack.canHack()) {
+                Logger.d("intercept pre  $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()}")
+                if (Config.needGenerate(callingUid))
+                    kotlin.runCatching {
+                        data.enforceInterface(IKeystoreService.DESCRIPTOR)
+                        val descriptor =
+                            data.readTypedObject(KeyDescriptor.CREATOR) ?: return@runCatching
+                        val response =
+                            SecurityLevelInterceptor.getKeyResponse(callingUid, descriptor.alias)
+                            ?: return@runCatching
+                        Logger.i("use generated key $callingUid ${descriptor.alias}")
+                        val p = Parcel.obtain()
+                        p.writeNoException()
+                        p.writeTypedObject(response, 0)
+                        return OverrideReply(0, p)
+                    }
+                else if (Config.needHack(callingUid)) return Continue
+                return Skip
+            }
         }
         return Skip
     }
@@ -53,7 +65,7 @@ object KeystoreInterceptor  : BinderInterceptor() {
         reply: Parcel?,
         resultCode: Int
     ): Result {
-        if (code != targetTransaction || reply == null) return Skip
+        if (target != keystore || code != getKeyEntryTransaction || reply == null) return Skip
         val p = Parcel.obtain()
         Logger.d("intercept post $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()} replySz=${reply.dataSize()}")
         try {
@@ -61,7 +73,7 @@ object KeystoreInterceptor  : BinderInterceptor() {
             val response = reply.readTypedObject(KeyEntryResponse.CREATOR)
             val chain = Utils.getCertificateChain(response)
             if (chain != null) {
-                val newChain = CertHack.engineGetCertificateChain(chain)
+                val newChain = CertHack.hackCertificateChain(chain)
                 Utils.putCertificateChain(response, newChain)
                 p.writeNoException()
                 p.writeTypedObject(response, 0)
@@ -98,8 +110,31 @@ object KeystoreInterceptor  : BinderInterceptor() {
             }
             return false
         }
+        val ks = IKeystoreService.Stub.asInterface(b)
+        val tee = kotlin.runCatching { ks.getSecurityLevel(SecurityLevel.TRUSTED_ENVIRONMENT) }
+            .getOrNull()
+        val strongBox =
+            kotlin.runCatching { ks.getSecurityLevel(SecurityLevel.STRONGBOX) }.getOrNull()
+        keystore = b
+        Logger.i("register for Keystore $keystore!")
         registerBinderInterceptor(bd, b, this)
-        b.linkToDeath(Killer, 0)
+        keystore.linkToDeath(Killer, 0)
+        if (tee != null) {
+            Logger.i("register for TEE SecurityLevel $tee!")
+            val interceptor = SecurityLevelInterceptor(tee)
+            registerBinderInterceptor(bd, tee.asBinder(), interceptor)
+            teeInterceptor = interceptor
+        } else {
+            Logger.i("no TEE SecurityLevel found!")
+        }
+        if (strongBox != null) {
+            Logger.i("register for StrongBox SecurityLevel $tee!")
+            val interceptor = SecurityLevelInterceptor(strongBox)
+            registerBinderInterceptor(bd, strongBox.asBinder(), interceptor)
+            strongBoxInterceptor = interceptor
+        } else {
+            Logger.i("no StrongBox SecurityLevel found!")
+        }
         return true
     }
 
