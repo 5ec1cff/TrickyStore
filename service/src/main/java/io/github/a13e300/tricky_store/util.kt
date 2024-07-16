@@ -1,5 +1,6 @@
 package io.github.a13e300.tricky_store
 
+import android.content.pm.IPackageManager
 import android.os.Build
 import android.os.SystemProperties
 
@@ -38,3 +39,11 @@ fun String.convertPatchLevel(long: Boolean) = kotlin.runCatching {
     if (long) l[0].toInt() * 10000 + l[1].toInt() * 100 + l[2].toInt()
     else l[0].toInt() * 100 + l[1].toInt()
 }.onFailure { Logger.e("invalid patch level $this !", it) }.getOrDefault(202404)
+
+fun IPackageManager.getPackageInfoCompat(name: String, flags: Long, userId: Int) =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        getPackageInfo(name, flags, userId)
+    } else {
+        getPackageInfo(name, flags.toInt(), userId)
+    }
+

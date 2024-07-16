@@ -436,7 +436,7 @@ public final class CertHack {
         var dg = MessageDigest.getInstance("SHA-256");
         for (int i = 0; i < size; i++) {
             var name = packages[i];
-            var info = pm.getPackageInfo(name, PackageManager.GET_SIGNATURES, uid / 100000);
+            var info = UtilKt.getPackageInfoCompat(pm, name, PackageManager.GET_SIGNATURES, uid / 100000);
             ASN1Encodable[] arr = new ASN1Encodable[2];
             arr[ATTESTATION_PACKAGE_INFO_PACKAGE_NAME_INDEX] =
                     new DEROctetString(packages[i].getBytes(StandardCharsets.UTF_8));

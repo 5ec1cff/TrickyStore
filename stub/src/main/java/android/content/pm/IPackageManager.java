@@ -7,6 +7,8 @@ public interface IPackageManager {
 
     PackageInfo getPackageInfo(String packageName, long flags, int userId);
 
+    PackageInfo getPackageInfo(String packageName, int flags, int userId);
+
     class Stub {
         public static IPackageManager asInterface(IBinder binder) {
             throw new RuntimeException("");
