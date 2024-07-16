@@ -9,7 +9,7 @@ endmacro()
 SET_OPTION(DOBBY_GENERATE_SHARED OFF)
 SET_OPTION(Plugin.SymbolResolver OFF)
 
-add_subdirectory(Dobby)
+add_subdirectory(dobby)
 target_link_libraries(dobby cxx)
 # end dobby
 
