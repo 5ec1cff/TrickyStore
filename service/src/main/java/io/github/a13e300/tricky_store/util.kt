@@ -3,17 +3,29 @@ package io.github.a13e300.tricky_store
 import android.content.pm.IPackageManager
 import android.os.Build
 import android.os.SystemProperties
+import java.util.concurrent.ThreadLocalRandom
 
 fun getTransactCode(clazz: Class<*>, method: String) =
     clazz.getDeclaredField("TRANSACTION_$method").apply { isAccessible = true }
         .getInt(null) // 2
 
-@OptIn(ExperimentalStdlibApi::class)
-val bootHashFromProp by lazy {
-    val b = SystemProperties.get("ro.boot.vbmeta.digest", null) ?: return@lazy null
-    if (b.length != 64) return@lazy null
-    b.hexToByteArray()
+val bootHash by lazy {
+    getBootHashFromProp() ?: randomBytes()
 }
+
+// TODO: get verified boot keys
+val bootKey by lazy {
+    randomBytes()
+}
+
+@OptIn(ExperimentalStdlibApi::class)
+fun getBootHashFromProp(): ByteArray? {
+    val b = SystemProperties.get("ro.boot.vbmeta.digest", null) ?: return null
+    if (b.length != 64) return null
+    return b.hexToByteArray()
+}
+
+fun randomBytes() = ByteArray(32).also { ThreadLocalRandom.current().nextBytes(it) }
 
 val patchLevel by lazy {
     Build.VERSION.SECURITY_PATCH.convertPatchLevel(false)

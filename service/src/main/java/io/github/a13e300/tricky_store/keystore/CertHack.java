@@ -48,7 +48,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
@@ -66,7 +65,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -203,7 +201,7 @@ public final class CertHack {
             signer = new JcaContentSignerBuilder(leaf.getSigAlgName())
                     .build(k.keyPair.getPrivate());
 
-            byte[] verifiedBootKey = null;
+            byte[] verifiedBootKey = UtilKt.getBootKey();
             byte[] verifiedBootHash = null;
             try {
                 if (!(rootOfTrust instanceof ASN1Sequence r)) {
@@ -216,13 +214,8 @@ public final class CertHack {
                 Logger.e("failed to get verified boot key or hash from original, use randomly generated instead", t);
             }
 
-            if (verifiedBootKey == null) {
-                verifiedBootKey = new byte[32];
-                ThreadLocalRandom.current().nextBytes(verifiedBootKey);
-            }
             if (verifiedBootHash == null) {
-                verifiedBootHash = new byte[32];
-                ThreadLocalRandom.current().nextBytes(verifiedBootHash);
+                verifiedBootHash = UtilKt.getBootHash();
             }
 
             ASN1Encodable[] rootOfTrustEnc = {
@@ -344,16 +337,8 @@ public final class CertHack {
 
     private static Extension createExtension(KeyGenParameters params, int uid) {
         try {
-            SecureRandom random = new SecureRandom();
-
-            byte[] key = new byte[32];
-            byte[] hash = UtilKt.getBootHashFromProp();
-
-            random.nextBytes(key);
-            if (hash == null || hash.length != 32) {
-                hash = new byte[32];
-                random.nextBytes(hash);
-            }
+            byte[] key = UtilKt.getBootKey();
+            byte[] hash = UtilKt.getBootHash();
 
             ASN1Encodable[] rootOfTrustEncodables = {new DEROctetString(key), ASN1Boolean.TRUE,
                     new ASN1Enumerated(0), new DEROctetString(hash)};
