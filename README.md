@@ -61,6 +61,11 @@ io.github.vvb2060.keyattestation
 com.google.android.gms!
 ```
 
+## Known issue
+
+- App Attest Key is not supported.
+- StrongBox is not supported.
+
 ## Acknowledgement
 
 - [PlayIntegrityFix](https://github.com/chiteroman/PlayIntegrityFix)
