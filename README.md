@@ -60,3 +60,11 @@ io.github.vvb2060.keyattestation
 # use certificate generating mode for gms
 com.google.android.gms!
 ```
+
+## Acknowledgement
+
+- [PlayIntegrityFix](https://github.com/chiteroman/PlayIntegrityFix)
+- [FrameworkPatch](https://github.com/chiteroman/FrameworkPatch)
+- [BootloaderSpoofer](https://github.com/chiteroman/BootloaderSpoofer)
+- [KeystoreInjection](https://github.com/aviraxp/Zygisk-KeystoreInjection)
+- [LSPosed](https://github.com/LSPosed/LSPosed)  
