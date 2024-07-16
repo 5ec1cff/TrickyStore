@@ -66,10 +66,10 @@ object KeystoreInterceptor : BinderInterceptor() {
         resultCode: Int
     ): Result {
         if (target != keystore || code != getKeyEntryTransaction || reply == null) return Skip
+        if (kotlin.runCatching { reply.readException() }.exceptionOrNull() != null) return Skip
         val p = Parcel.obtain()
         Logger.d("intercept post $target uid=$callingUid pid=$callingPid dataSz=${data.dataSize()} replySz=${reply.dataSize()}")
         try {
-            reply.readException()
             val response = reply.readTypedObject(KeyEntryResponse.CREATOR)
             val chain = Utils.getCertificateChain(response)
             if (chain != null) {
