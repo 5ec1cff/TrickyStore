@@ -5,6 +5,7 @@
 #include <binder/Binder.h>
 #include <utils/StrongPointer.h>
 #include <binder/Common.h>
+#include <binder/IServiceManager.h>
 
 #include <utility>
 #include <map>
@@ -63,7 +64,7 @@ CREATE_MEM_HOOK_STUB_ENTRY(
             LOGD("transact: binder=%p code=%d", thiz, code);
             if (IPCThreadState::self()->getCallingUid() == 0 && reply != nullptr &&
                 thiz != gBinderInterceptor) [[unlikely]] {
-                if (code == 0xdeadbeef) {
+                if (code == 0xadbeef) {
                     LOGD("request binder interceptor");
                     reply->writeStrongBinder(gBinderInterceptor);
                     return OK;
@@ -268,6 +269,38 @@ bool hookBinder() {
     }
     LOGI("hook success!");
     gBinderInterceptor = sp<BinderInterceptor>::make();
+    auto transactSym = handler.get_symbol("_ZN7android7BBinder8transactEjRKNS_6ParcelEPS1_j");
+    auto &img = handler.img;
+    auto [vtSym, vtSize] = img.getSymInfo("_ZTVN7android7BBinderE");
+    auto sm = defaultServiceManager();
+    if (sm == nullptr) {
+        LOGE("service manager is null!");
+        return false;
+    } else {
+        int transactPos = -1;
+        auto svc = sm->checkService(String16("android.system.keystore2.IKeystoreService/default"));
+        if (svc != nullptr) {
+            for (int i = 0; i < vtSize / sizeof(uintptr_t); i++) {
+                auto val = *((uintptr_t *) vtSym + i);
+                auto name = img.findSymbolNameForAddr(val);
+                LOGI("vtable %i: %p %s", i, val, name.c_str());
+                if (val == (uintptr_t) transactSym) {
+                    transactPos = i - 3;
+                    LOGI("transact pos %d", transactPos);
+                }
+            }
+            if (transactPos >= 0) {
+                auto svcTransactAddr = *(*reinterpret_cast<void ***>(svc.get()) + transactPos);
+                LOGI("transact of svc %p: %p", svc.get(), svcTransactAddr);
+            } else {
+                LOGE("transactPos not found!");
+                return false;
+            }
+        } else {
+            LOGE("IKeystoreService not found!");
+            return false;
+        }
+    }
     return true;
 }
 

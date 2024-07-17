@@ -3,6 +3,7 @@ package io.github.a13e300.tricky_store.binder
 import android.os.Binder
 import android.os.IBinder
 import android.os.Parcel
+import io.github.a13e300.tricky_store.Logger
 
 open class BinderInterceptor : Binder() {
     sealed class Result
@@ -16,9 +17,14 @@ open class BinderInterceptor : Binder() {
             val data = Parcel.obtain()
             val reply = Parcel.obtain()
             try {
-                b.transact(0xdeadbeef.toInt(), data, reply, 0)
+                if (!b.transact(0xadbeef, data, reply, 0)) {
+                    Logger.e("remote return false!")
+                    return null
+                }
+                Logger.d("remote return true!")
                 return reply.readStrongBinder()
-            } catch (ignored: Throwable) {
+            } catch (t: Throwable) {
+                Logger.e("failed to read binder", t)
                 return null
             } finally {
                 data.recycle()

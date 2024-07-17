@@ -1,5 +1,6 @@
 #include "utils/StrongPointer.h"
 #include "utils/RefBase.h"
+#include "utils/String16.h"
 
 namespace android {
     void RefBase::incStrong(const void *id) const {
@@ -49,4 +50,14 @@ namespace android {
     bool RefBase::weakref_type::attemptIncWeak(const void* id) { return false; }
 
     void sp_report_race() {}
+
+    String16::String16() {}
+
+    String16::String16(const String16 &o) {}
+
+    String16::String16(String16 &&o) noexcept {}
+
+    String16::String16(const char *o) {}
+
+    String16::~String16() {}
 }

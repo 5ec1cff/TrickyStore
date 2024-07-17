@@ -88,12 +88,18 @@ object KeystoreInterceptor : BinderInterceptor() {
         return Skip
     }
 
+    private var tried = false
+
     fun tryRunKeystoreInterceptor(): Boolean {
         Logger.i("trying to register keystore interceptor ...")
         val b = ServiceManager.getService("android.system.keystore2.IKeystoreService/default") ?: return false
         val bd = getBinderBackdoor(b)
         if (bd == null) {
             // no binder hook, try inject
+            if (tried) {
+                Logger.e("inject tried but still has no backdoor, exit")
+                exitProcess(1)
+            }
             Logger.i("trying to inject keystore ...")
             val p = Runtime.getRuntime().exec(
                 arrayOf(
@@ -108,6 +114,7 @@ object KeystoreInterceptor : BinderInterceptor() {
                 Logger.e("failed to inject! daemon exit")
                 exitProcess(1)
             }
+            tried = true
             return false
         }
         val ks = IKeystoreService.Stub.asInterface(b)

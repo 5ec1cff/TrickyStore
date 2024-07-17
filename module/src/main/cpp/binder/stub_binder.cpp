@@ -4,6 +4,7 @@
 #include "binder/IPCThreadState.h"
 #include "binder/Parcel.h"
 #include "binder/IInterface.h"
+#include "binder/IServiceManager.h"
 
 namespace android {
     // IBinder.h
@@ -148,4 +149,17 @@ namespace android {
 
     int32_t Parcel::readExceptionCode() const { return 0; }
     int Parcel::readFileDescriptor() const { return 0; }
+
+    // IServiceManager.h
+    const String16 &IServiceManager::getInterfaceDescriptor() const {
+        return {};
+    }
+
+    IServiceManager::IServiceManager() {}
+
+    IServiceManager::~IServiceManager() {}
+
+    sp<IServiceManager> defaultServiceManager() { return nullptr; }
+
+    void setDefaultServiceManager(const sp<IServiceManager> &sm) {}
 }
