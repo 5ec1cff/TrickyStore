@@ -97,5 +97,5 @@ fi
 ui_print "***********************************************************************"
 ui_print "- Put keybox.xml to /data/adb/tricky_store/keybox.xml"
 ui_print "- Put target packages to /data/adb/tricky_store/target.txt (Optional)"
-ui_print "- Format: one packages per line"
+ui_print "- Format: one package per line"
 ui_print "***********************************************************************"
