@@ -87,3 +87,15 @@ fi
 
 mv "$MODPATH/libinject.so" "$MODPATH/inject"
 chmod 755 "$MODPATH/inject"
+
+LIST="/data/adb/tricky_store/target.txt"
+mkdir -p /data/adb/tricky_store
+if [ ! -e "$LIST" ]; then
+    echo "" > "$LIST"
+fi
+
+ui_print "***********************************************************************"
+ui_print "- Put keybox.xml to /data/adb/tricky_store/keybox.xml"
+ui_print "- Put target packages to /data/adb/tricky_store/target.txt (Optional)"
+ui_print "- Format: one packages per line"
+ui_print "***********************************************************************"
