@@ -20,8 +20,9 @@ public:
     }
 
     void preAppSpecialize(AppSpecializeArgs *args) override {
-        int enabled = 0;
         api_->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
+
+        int enabled = 0;
         {
             auto fd = api_->connectCompanion();
             if (fd >= 0) {
@@ -30,31 +31,46 @@ public:
             }
         }
         if (!enabled) return;
-        const char *process = env_->GetStringUTFChars(args->nice_name, nullptr);
-        if (process == "com.google.android.gms.unstable"sv) {
-            LOGI("spoofing build vars in %s!", process);
-            auto buildClass = env_->FindClass("android/os/Build");
-            auto buildVersionClass = env_->FindClass("android/os/Build$VERSION");
+
+        auto nice_name = env_->GetStringUTFChars(args->nice_name, nullptr);
+        auto app_data_dir = env_->GetStringUTFChars(args->app_data_dir, nullptr);
+        // Prevent crash on apps with no data dir
+        if (app_data_dir == nullptr) {
+            env_->ReleaseStringUTFChars(args->nice_name, nice_name);
+            return;
+        }
+
+        std::string_view process(nice_name);
+        std::string_view dir(app_data_dir);
+
+        env_->ReleaseStringUTFChars(args->nice_name, nice_name);
+        env_->ReleaseStringUTFChars(args->app_data_dir, app_data_dir);
+
+        if (!dir.ends_with("/com.google.android.gms") || process != "com.google.android.gms.unstable") {
+            return;
+        }
+
+        LOGI("spoofing build vars in GMS!");
+        auto buildClass = env_->FindClass("android/os/Build");
+        auto buildVersionClass = env_->FindClass("android/os/Build$VERSION");
 
 #define SET_FIELD(CLAZZ, FIELD, VALUE) ({ \
             auto id = env_->GetStaticFieldID(CLAZZ, FIELD, "Ljava/lang/String;"); \
             env_->SetStaticObjectField(buildClass, id, env_->NewStringUTF(VALUE)); })
 
-            SET_FIELD(buildClass, "MANUFACTURER", "Google");
-            SET_FIELD(buildClass, "MODEL", "Pixel");
-            SET_FIELD(buildClass, "FINGERPRINT",
-                            "google/sailfish/sailfish:8.1.0/OPM1.171019.011/4448085:user/release-keys");
-            SET_FIELD(buildClass, "BRAND", "google");
-            SET_FIELD(buildClass, "PRODUCT", "sailfish");
-            SET_FIELD(buildClass, "DEVICE", "sailfish");
-            SET_FIELD(buildVersionClass, "RELEASE", "8.1.0");
-            SET_FIELD(buildClass, "ID", "OPM1.171019.011");
-            SET_FIELD(buildVersionClass, "INCREMENTAL", "4448085");
-            SET_FIELD(buildVersionClass, "SECURITY_PATCH", "2017-12-05");
-            SET_FIELD(buildClass, "TYPE", "user");
-            SET_FIELD(buildClass, "TAGS", "release-keys");
-        }
-        env_->ReleaseStringUTFChars(args->nice_name, process);
+        SET_FIELD(buildClass, "MANUFACTURER", "Google");
+        SET_FIELD(buildClass, "MODEL", "Pixel");
+        SET_FIELD(buildClass, "FINGERPRINT",
+                  "google/sailfish/sailfish:8.1.0/OPM1.171019.011/4448085:user/release-keys");
+        SET_FIELD(buildClass, "BRAND", "google");
+        SET_FIELD(buildClass, "PRODUCT", "sailfish");
+        SET_FIELD(buildClass, "DEVICE", "sailfish");
+        SET_FIELD(buildVersionClass, "RELEASE", "8.1.0");
+        SET_FIELD(buildClass, "ID", "OPM1.171019.011");
+        SET_FIELD(buildVersionClass, "INCREMENTAL", "4448085");
+        SET_FIELD(buildVersionClass, "SECURITY_PATCH", "2017-12-05");
+        SET_FIELD(buildClass, "TYPE", "user");
+        SET_FIELD(buildClass, "TAGS", "release-keys");
     }
 
     void preServerSpecialize(ServerSpecializeArgs *args) override {
