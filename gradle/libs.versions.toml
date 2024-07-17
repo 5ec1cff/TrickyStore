@@ -1,5 +1,5 @@
 [versions]
-agp = "8.5.0"
+agp = "8.5.1"
 bcpkix-jdk18on = "1.78.1"
 kotlin = "2.0.0"
 annotation = "1.8.0"
