@@ -6,11 +6,14 @@
 #include <utils/StrongPointer.h>
 #include <binder/Common.h>
 #include <binder/IServiceManager.h>
+#include <sys/ioctl.h>
+#include "kernel/binder.h"
 
 #include <utility>
 #include <map>
 #include <shared_mutex>
 #include <vector>
+#include <queue>
 
 #include "logging.hpp"
 #include "dobby.h"
@@ -50,36 +53,140 @@ public:
     status_t onTransact(uint32_t code, const android::Parcel &data, android::Parcel *reply,
                         uint32_t flags) override;
 
-    bool handleIntercept(BBinder *thiz, uint32_t code, const Parcel &data, Parcel *reply,
+    bool handleIntercept(sp<BBinder> target, uint32_t code, const Parcel &data, Parcel *reply,
                          uint32_t flags, status_t &result);
+
+    bool needIntercept(const wp<BBinder>& target);
 };
 
 static sp<BinderInterceptor> gBinderInterceptor = nullptr;
 
-CREATE_MEM_HOOK_STUB_ENTRY(
-        "_ZN7android7BBinder8transactEjRKNS_6ParcelEPS1_j",
-        status_t, BBinder_Transact,
-        (BBinder * thiz, uint32_t code, const Parcel &data, Parcel *reply, uint32_t flags),
-        {
-            LOGD("transact: binder=%p code=%d", thiz, code);
-            if (IPCThreadState::self()->getCallingUid() == 0 && reply != nullptr &&
-                thiz != gBinderInterceptor) [[unlikely]] {
-                if (code == 0xadbeef) {
-                    LOGD("request binder interceptor");
-                    reply->writeStrongBinder(gBinderInterceptor);
-                    return OK;
+struct thread_transaction_info {
+    uint32_t code;
+    wp<BBinder> target;
+};
+
+thread_local std::queue<thread_transaction_info> ttis;
+
+class BinderStub : public BBinder {
+    status_t onTransact(uint32_t code, const android::Parcel &data, android::Parcel *reply, uint32_t flags) override {
+        LOGD("BinderStub %d", code);
+        if (!ttis.empty()) {
+            auto tti = ttis.front();
+            ttis.pop();
+            if (tti.target == nullptr && tti.code == 0xdeadbeef && reply) {
+                LOGD("backdoor requested!");
+                reply->writeStrongBinder(gBinderInterceptor);
+                return OK;
+            } else if (tti.target != nullptr) {
+                LOGD("intercepting");
+                auto p = tti.target.promote();
+                if (p) {
+                    LOGD("calling interceptor");
+                    status_t result;
+                    if (!gBinderInterceptor->handleIntercept(p, tti.code, data, reply, flags,
+                                                             result)) {
+                        LOGD("calling orig");
+                        result = p->transact(tti.code, data, reply, flags);
+                    }
+                    return result;
+                } else {
+                    LOGE("promote failed");
                 }
             }
-            status_t result;
-            if (gBinderInterceptor->handleIntercept(thiz, code, data, reply,
-                                                               flags, result)) {
-                LOGD("transact intercepted: binder=%p code=%d result=%d", thiz, code, result);
-                return result;
+        }
+        return UNKNOWN_TRANSACTION;
+    }
+};
+
+static sp<BinderStub> gBinderStub = nullptr;
+
+int (*old_ioctl)(int fd, int request, ...) = nullptr;
+int new_ioctl(int fd, int request, ...) {
+    va_list list;
+    va_start(list, request);
+    auto arg = va_arg(list, void*);
+    va_end(list);
+    auto result = old_ioctl(fd, request, arg);
+    // TODO: check fd
+    if (result >= 0 && request == BINDER_WRITE_READ) {
+        auto &bwr = *(struct binder_write_read*) arg;
+        LOGD("read buffer %p size %zu consumed %zu", bwr.read_buffer, bwr.read_size,
+             bwr.read_consumed);
+        if (bwr.read_buffer != 0 && bwr.read_size != 0 && bwr.read_consumed > sizeof(int32_t)) {
+            auto ptr = bwr.read_buffer;
+            auto consumed = bwr.read_consumed;
+            while (consumed > 0) {
+                consumed -= sizeof(uint32_t);
+                if (consumed < 0) {
+                    LOGE("consumed < 0");
+                    break;
+                }
+                auto cmd = *(uint32_t *) ptr;
+                ptr += sizeof(uint32_t);
+                auto sz = _IOC_SIZE(cmd);
+                LOGD("ioctl cmd %d sz %d", cmd, sz);
+                consumed -= sz;
+                if (consumed < 0) {
+                    LOGE("consumed < 0");
+                    break;
+                }
+                if (cmd == BR_TRANSACTION_SEC_CTX || cmd == BR_TRANSACTION) {
+                    binder_transaction_data_secctx *tr_secctx = nullptr;
+                    binder_transaction_data *tr = nullptr;
+                    if (cmd == BR_TRANSACTION_SEC_CTX) {
+                        LOGD("cmd is BR_TRANSACTION_SEC_CTX");
+                        tr_secctx = (binder_transaction_data_secctx *) ptr;
+                        tr = &tr_secctx->transaction_data;
+                    } else {
+                        LOGD("cmd is BR_TRANSACTION");
+                        tr = (binder_transaction_data *) ptr;
+                    }
+
+                    if (tr != nullptr) {
+                        auto wt = tr->target.ptr;
+                        if (wt != 0) {
+                            bool need_intercept = false;
+                            thread_transaction_info tti{};
+                            if (tr->code == 0xdeadbeef && tr->sender_euid == 0) {
+                                tti.code = 0xdeadbeef;
+                                tti.target = nullptr;
+                                need_intercept = true;
+                            } else if (reinterpret_cast<RefBase::weakref_type *>(wt)->attemptIncStrong(
+                                    nullptr)) {
+                                auto b = (BBinder *) tr->cookie;
+                                auto wb = wp<BBinder>::fromExisting(b);
+                                if (gBinderInterceptor->needIntercept(wb)) {
+                                    tti.code = tr->code;
+                                    tti.target = wb;
+                                    need_intercept = true;
+                                    LOGD("intercept code=%d target=%p", tr->code, b);
+                                }
+                                b->decStrong(nullptr);
+                            }
+                            if (need_intercept) {
+                                LOGD("add intercept item!");
+                                tr->target.ptr = (uintptr_t) gBinderStub->getWeakRefs();
+                                tr->cookie = (uintptr_t) gBinderStub.get();
+                                tr->code = 0xdeadbeef;
+                                ttis.push(tti);
+                            }
+                        }
+                    } else {
+                        LOGE("no transaction data found!");
+                    }
+                }
+                ptr += sz;
             }
-            result = backup(thiz, code, data, reply, flags);
-            LOGD("transact: binder=%p code=%d result=%d", thiz, code, result);
-            return result;
-        });
+        }
+    }
+    return result;
+}
+
+bool BinderInterceptor::needIntercept(const wp<BBinder> &target) {
+    ReadGuard g{lock};
+    return items.find(target) != items.end();
+}
 
 status_t
 BinderInterceptor::onTransact(uint32_t code, const android::Parcel &data, android::Parcel *reply,
@@ -182,20 +289,21 @@ public:
 };
 
 bool
-BinderInterceptor::handleIntercept(BBinder *thiz, uint32_t code, const Parcel &data, Parcel *reply,
+BinderInterceptor::handleIntercept(sp<BBinder> target, uint32_t code, const Parcel &data, Parcel *reply,
                                    uint32_t flags, status_t &result) {
 #define CHECK(expr) ({ auto __result = (expr); if (__result != OK) { LOGE(#expr " = %d", __result); return false; } })
     sp<IBinder> interceptor;
     {
         ReadGuard rg{lock};
-        wp<IBinder> target = wp<IBinder>::fromExisting(thiz);
         auto it = items.find(target);
-        if (it == items.end()) return false;
+        if (it == items.end()) {
+            LOGE("no intercept item found!");
+            return false;
+        }
         interceptor = it->second.interceptor;
     }
-    LOGD("intercept on binder %p code %d flags %d (reply=%s)", thiz, code, flags,
+    LOGD("intercept on binder %p code %d flags %d (reply=%s)", target.get(), code, flags,
          reply ? "true" : "false");
-    sp<IBinder> target = sp<IBinder>::fromExisting(thiz);
     Parcel tmpData, tmpReply, realData;
     CHECK(tmpData.writeStrongBinder(target));
     CHECK(tmpData.writeUint32(code));
@@ -223,7 +331,7 @@ BinderInterceptor::handleIntercept(BBinder *thiz, uint32_t code, const Parcel &d
     } else {
         CHECK(realData.appendFrom(&data, 0, data.dataSize()));
     }
-    result = BBinder_Transact.backup(thiz, code, realData, reply, flags);
+    result = target->transact(code, realData, reply, flags);
 
     tmpData.freeData();
     tmpReply.freeData();
@@ -258,49 +366,19 @@ BinderInterceptor::handleIntercept(BBinder *thiz, uint32_t code, const Parcel &d
 }
 
 bool hookBinder() {
-    HookHandler handler{ElfInfo::getElfInfoForName("libbinder.so")};
-    if (!handler.isValid()) {
+    ElfImg img{ElfInfo::getElfInfoForName("libc.so")};
+    if (!img.isValid()) {
         LOGE("libbinder not found!");
         return false;
     }
-    if (!hook_helper::HookSym(handler, BBinder_Transact)) {
+    gBinderInterceptor = sp<BinderInterceptor>::make();
+    gBinderStub = sp<BinderStub>::make();
+    auto ioctlAddr = img.getSymbAddress("ioctl");
+    if (DobbyHook(ioctlAddr, (dobby_dummy_func_t) new_ioctl, (dobby_dummy_func_t*) &old_ioctl) != 0) {
         LOGE("hook failed!");
         return false;
     }
     LOGI("hook success!");
-    gBinderInterceptor = sp<BinderInterceptor>::make();
-    auto transactSym = handler.get_symbol("_ZN7android7BBinder8transactEjRKNS_6ParcelEPS1_j");
-    auto &img = handler.img;
-    auto [vtSym, vtSize] = img.getSymInfo("_ZTVN7android7BBinderE");
-    auto sm = defaultServiceManager();
-    if (sm == nullptr) {
-        LOGE("service manager is null!");
-        return false;
-    } else {
-        int transactPos = -1;
-        auto svc = sm->checkService(String16("android.system.keystore2.IKeystoreService/default"));
-        if (svc != nullptr) {
-            for (int i = 0; i < vtSize / sizeof(uintptr_t); i++) {
-                auto val = *((uintptr_t *) vtSym + i);
-                auto name = img.findSymbolNameForAddr(val);
-                LOGI("vtable %i: %p %s", i, val, name.c_str());
-                if (val == (uintptr_t) transactSym) {
-                    transactPos = i - 3;
-                    LOGI("transact pos %d", transactPos);
-                }
-            }
-            if (transactPos >= 0) {
-                auto svcTransactAddr = *(*reinterpret_cast<void ***>(svc.get()) + transactPos);
-                LOGI("transact of svc %p: %p", svc.get(), svcTransactAddr);
-            } else {
-                LOGE("transactPos not found!");
-                return false;
-            }
-        } else {
-            LOGE("IKeystoreService not found!");
-            return false;
-        }
-    }
     return true;
 }
 

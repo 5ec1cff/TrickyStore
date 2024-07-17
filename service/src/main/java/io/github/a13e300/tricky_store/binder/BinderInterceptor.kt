@@ -17,7 +17,7 @@ open class BinderInterceptor : Binder() {
             val data = Parcel.obtain()
             val reply = Parcel.obtain()
             try {
-                if (!b.transact(0xadbeef, data, reply, 0)) {
+                if (!b.transact(0xdeadbeef.toInt(), data, reply, 0)) {
                     Logger.e("remote return false!")
                     return null
                 }
