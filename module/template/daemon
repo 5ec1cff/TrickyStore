@@ -1,0 +1,3 @@
+#!/system/bin/sh
+
+exec /system/bin/app_process -Djava.class.path=./service.apk / --nice-name=TrickyStore io.github.a13e300.tricky_store.MainKt

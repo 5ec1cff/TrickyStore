@@ -60,14 +60,15 @@ fi
 . "$TMPDIR/verify.sh"
 extract "$ZIPFILE" 'customize.sh'  "$TMPDIR/.vunzip"
 extract "$ZIPFILE" 'verify.sh'     "$TMPDIR/.vunzip"
-extract "$ZIPFILE" 'sepolicy.rule' "$TMPDIR"
 
 ui_print "- Extracting module files"
 extract "$ZIPFILE" 'module.prop'     "$MODPATH"
 extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
 extract "$ZIPFILE" 'service.sh'      "$MODPATH"
 extract "$ZIPFILE" 'service.apk'     "$MODPATH"
-mv "$TMPDIR/sepolicy.rule" "$MODPATH"
+extract "$ZIPFILE" 'sepolicy.rule'   "$MODPATH"
+extract "$ZIPFILE" 'daemon'          "$MODPATH"
+chmod +x "$MODPATH/daemon"
 
 mkdir "$MODPATH/zygisk"
 
