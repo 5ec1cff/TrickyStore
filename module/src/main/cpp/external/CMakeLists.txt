@@ -1,17 +1,14 @@
 project(external)
 
+# lsplt
+set(SOURCES lsplt/lsplt/src/main/jni/lsplt.cc lsplt/lsplt/src/main/jni/elf_util.cc)
 
-# dobby
-macro(SET_OPTION option value)
-    set(${option} ${value} CACHE INTERNAL "" FORCE)
-endmacro()
+add_library(lsplt STATIC ${SOURCES})
+target_include_directories(lsplt PUBLIC lsplt/lsplt/src/main/jni/include)
+target_include_directories(lsplt PRIVATE lsplt/lsplt/src/main/jni)
 
-SET_OPTION(DOBBY_GENERATE_SHARED OFF)
-SET_OPTION(Plugin.SymbolResolver OFF)
-
-add_subdirectory(dobby)
-target_link_libraries(dobby cxx)
-# end dobby
+target_link_libraries(lsplt PUBLIC my_logging cxx)
+# end lsplt
 
 # cxx
 set(LIBCXX_SOURCES

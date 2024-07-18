@@ -16,7 +16,7 @@
 #include <queue>
 
 #include "logging.hpp"
-#include "dobby.h"
+#include "lsplt.hpp"
 #include "elf_util.h"
 
 #include "hook_util/hook_helper.hpp"
@@ -101,6 +101,7 @@ class BinderStub : public BBinder {
 
 static sp<BinderStub> gBinderStub = nullptr;
 
+// FIXME: when use ioctl hooking, some already blocked ioctl calls will not be hooked
 int (*old_ioctl)(int fd, int request, ...) = nullptr;
 int new_ioctl(int fd, int request, ...) {
     va_list list;
@@ -242,52 +243,6 @@ BinderInterceptor::onTransact(uint32_t code, const android::Parcel &data, androi
     return UNKNOWN_TRANSACTION;
 }
 
-
-class HookHandler : public hook_helper::HookHandler {
-public:
-    ElfImg img;
-
-    explicit HookHandler(ElfInfo info) : img{std::move(info)} {}
-
-    bool isValid() const {
-        return img.isValid();
-    }
-
-    void *get_symbol(const char *name) const override {
-        auto addr = img.getSymbAddress(name);
-        if (!addr) {
-            LOGE("%s: symbol not found", name);
-        }
-        return addr;
-    }
-
-    void *get_symbol_prefix(const char *prefix) const override {
-        auto addr = img.getSymbPrefixFirstOffset(prefix);
-        if (!addr) {
-            LOGE("%s: prefix symbol not found", prefix);
-        }
-        return addr;
-    }
-
-    void *hook(void *original, void *replacement) const override {
-        void *result = nullptr;
-        if (DobbyHook(original, (dobby_dummy_func_t) replacement, (dobby_dummy_func_t *) &result) ==
-            0) {
-            return result;
-        } else {
-            return nullptr;
-        }
-    }
-
-    std::pair<uintptr_t, size_t> get_symbol_info(const char *name) const override {
-        auto p = img.getSymInfo(name);
-        if (!p.first) {
-            LOGE("%s: info not found", name);
-        }
-        return p;
-    }
-};
-
 bool
 BinderInterceptor::handleIntercept(sp<BBinder> target, uint32_t code, const Parcel &data, Parcel *reply,
                                    uint32_t flags, status_t &result) {
@@ -366,15 +321,26 @@ BinderInterceptor::handleIntercept(sp<BBinder> target, uint32_t code, const Parc
 }
 
 bool hookBinder() {
-    ElfImg img{ElfInfo::getElfInfoForName("libc.so")};
-    if (!img.isValid()) {
+    auto maps = lsplt::MapInfo::Scan();
+    dev_t dev;
+    ino_t ino;
+    bool found = false;
+    for (auto &m: maps) {
+        if (m.path.ends_with("/libbinder.so")) {
+            dev = m.dev;
+            ino = m.inode;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
         LOGE("libbinder not found!");
         return false;
     }
     gBinderInterceptor = sp<BinderInterceptor>::make();
     gBinderStub = sp<BinderStub>::make();
-    auto ioctlAddr = img.getSymbAddress("ioctl");
-    if (DobbyHook(ioctlAddr, (dobby_dummy_func_t) new_ioctl, (dobby_dummy_func_t*) &old_ioctl) != 0) {
+    lsplt::RegisterHook(dev, ino, "ioctl", (void *) new_ioctl, (void **) &old_ioctl);
+    if (!lsplt::CommitHook()) {
         LOGE("hook failed!");
         return false;
     }
