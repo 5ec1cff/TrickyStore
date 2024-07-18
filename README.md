@@ -40,6 +40,8 @@ format:
 
 ## Build Vars Spoofing
 
+> **Zygisk (or Zygisk Next) is needed for this feature to work.**
+
 If you can not pass strong integrity, you can try to enable build vars spoofing
 by creating a file `/data/adb/tricky_store/spoof_build_vars`.
 
@@ -65,7 +67,6 @@ Here is an example of spoof config:
    "tags": "release-keys"
 }
 ```
-Zygisk (or Zygisk Next) is needed for this feature to work.
 
 ## Support TEE broken devices
 
