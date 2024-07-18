@@ -88,7 +88,8 @@ object KeystoreInterceptor : BinderInterceptor() {
         return Skip
     }
 
-    private var tried = false
+    private var triedCount = 0
+    private var injected = false
 
     fun tryRunKeystoreInterceptor(): Boolean {
         Logger.i("trying to register keystore interceptor ...")
@@ -96,25 +97,28 @@ object KeystoreInterceptor : BinderInterceptor() {
         val bd = getBinderBackdoor(b)
         if (bd == null) {
             // no binder hook, try inject
-            if (tried) {
+            if (triedCount >= 3) {
                 Logger.e("inject tried but still has no backdoor, exit")
                 exitProcess(1)
             }
-            Logger.i("trying to inject keystore ...")
-            val p = Runtime.getRuntime().exec(
-                arrayOf(
-                    "/system/bin/sh",
-                    "-c",
-                    "exec ./inject `pidof keystore2` libtricky_store.so entry"
+            if (!injected) {
+                Logger.i("trying to inject keystore ...")
+                val p = Runtime.getRuntime().exec(
+                    arrayOf(
+                        "/system/bin/sh",
+                        "-c",
+                        "exec ./inject `pidof keystore2` libtricky_store.so entry"
+                    )
                 )
-            )
-            // logD(p.inputStream.readBytes().decodeToString())
-            // logD(p.errorStream.readBytes().decodeToString())
-            if (p.waitFor() != 0) {
-                Logger.e("failed to inject! daemon exit")
-                exitProcess(1)
+                // logD(p.inputStream.readBytes().decodeToString())
+                // logD(p.errorStream.readBytes().decodeToString())
+                if (p.waitFor() != 0) {
+                    Logger.e("failed to inject! daemon exit")
+                    exitProcess(1)
+                }
+                injected = true
             }
-            tried = true
+            triedCount += 1
             return false
         }
         val ks = IKeystoreService.Stub.asInterface(b)
