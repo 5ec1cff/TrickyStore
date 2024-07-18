@@ -60,6 +60,7 @@ fi
 . "$TMPDIR/verify.sh"
 extract "$ZIPFILE" 'customize.sh'  "$TMPDIR/.vunzip"
 extract "$ZIPFILE" 'verify.sh'     "$TMPDIR/.vunzip"
+extract "$ZIPFILE" 'target.txt'    "$TMPDIR"
 
 ui_print "- Extracting module files"
 extract "$ZIPFILE" 'module.prop'     "$MODPATH"
@@ -67,7 +68,6 @@ extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
 extract "$ZIPFILE" 'service.sh'      "$MODPATH"
 extract "$ZIPFILE" 'service.apk'     "$MODPATH"
 extract "$ZIPFILE" 'sepolicy.rule'   "$MODPATH"
-extract "$ZIPFILE" 'daemon'          "$MODPATH"
 chmod +x "$MODPATH/daemon"
 
 mkdir "$MODPATH/zygisk"
@@ -88,3 +88,14 @@ fi
 
 mv "$MODPATH/libinject.so" "$MODPATH/inject"
 chmod 755 "$MODPATH/inject"
+
+CONFIG_DIR=/data/adb/tricky_store
+if [ ! -d $CONFIG_DIR ]; then
+  ui_print "- Creating configuration directory"
+  mkdir -p $CONFIG_DIR
+  if [ ! -f $CONFIG_DIR/target.txt ]; then
+    ui_print "- Adding default scope"
+    extract "$ZIPFILE" 'daemon'          "$MODPATH"
+    mv "$TMPDIR/target.txt"
+  fi
+fi

@@ -9,12 +9,6 @@ import java.io.File
 object Config {
     private val hackPackages = mutableSetOf<String>()
     private val generatePackages = mutableSetOf<String>()
-    private val DEFAULT_TARGET_PACKAGES = listOf(
-        "com.google.android.gms",
-        "icu.nullptr.nativetest",
-        "io.github.vvb2060.mahoshojo",
-        "io.github.vvb2060.keyattestation"
-    )
 
     private fun updateTargetPackages(f: File?) = runCatching {
         hackPackages.clear()
@@ -59,12 +53,12 @@ object Config {
 
     fun initialize() {
         root.mkdirs()
-        val target = File(root, TARGET_FILE)
-        if (!target.exists()) {
-            target.createNewFile()
-            target.writeText(DEFAULT_TARGET_PACKAGES.joinToString("\n"))
+        val scope = File(root, TARGET_FILE)
+        if (scope.exists()) {
+            updateTargetPackages(scope)
+        } else {
+            Logger.e("target.txt file not found, please put it to $scope !")
         }
-        updateTargetPackages(target)
         val keybox = File(root, KEYBOX_FILE)
         if (!keybox.exists()) {
             Logger.e("keybox file not found, please put it to $keybox !")
