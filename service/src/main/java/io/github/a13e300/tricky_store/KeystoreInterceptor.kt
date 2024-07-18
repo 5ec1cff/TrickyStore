@@ -42,7 +42,7 @@ object KeystoreInterceptor : BinderInterceptor() {
                         val response =
                             SecurityLevelInterceptor.getKeyResponse(callingUid, descriptor.alias)
                             ?: return@runCatching
-                        Logger.i("use generated key $callingUid ${descriptor.alias}")
+                        Logger.i("generate key for uid=$callingUid alias=${descriptor.alias}")
                         val p = Parcel.obtain()
                         p.writeNoException()
                         p.writeTypedObject(response, 0)
@@ -75,6 +75,7 @@ object KeystoreInterceptor : BinderInterceptor() {
             if (chain != null) {
                 val newChain = CertHack.hackCertificateChain(chain)
                 Utils.putCertificateChain(response, newChain)
+                Logger.i("hacked cert of uid=$callingUid")
                 p.writeNoException()
                 p.writeTypedObject(response, 0)
                 return OverrideReply(0, p)
@@ -92,13 +93,13 @@ object KeystoreInterceptor : BinderInterceptor() {
     private var injected = false
 
     fun tryRunKeystoreInterceptor(): Boolean {
-        Logger.i("trying to register keystore interceptor ...")
+        Logger.i("trying to register keystore interceptor ($triedCount) ...")
         val b = ServiceManager.getService("android.system.keystore2.IKeystoreService/default") ?: return false
         val bd = getBinderBackdoor(b)
         if (bd == null) {
             // no binder hook, try inject
             if (triedCount >= 3) {
-                Logger.e("inject tried but still has no backdoor, exit")
+                Logger.e("tried injection but still has no backdoor, exit")
                 exitProcess(1)
             }
             if (!injected) {
