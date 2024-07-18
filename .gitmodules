@@ -4,3 +4,6 @@
 [submodule "module/src/main/cpp/external/LSPlt"]
 	path = module/src/main/cpp/external/LSPlt
 	url = https://github.com/LSPosed/LSPlt
+[submodule "module/src/main/cpp/external/glaze"]
+	path = module/src/main/cpp/external/glaze
+	url = https://github.com/stephenberry/glaze

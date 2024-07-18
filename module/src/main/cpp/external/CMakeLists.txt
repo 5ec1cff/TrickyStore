@@ -10,6 +10,8 @@ target_include_directories(lsplt PRIVATE LSPlt/lsplt/src/main/jni)
 target_link_libraries(lsplt PUBLIC my_logging cxx)
 # end lsplt
 
+add_subdirectory(glaze)
+
 # cxx
 set(LIBCXX_SOURCES
         algorithm.cpp
@@ -23,16 +25,16 @@ set(LIBCXX_SOURCES
         condition_variable_destructor.cpp
         #        debug.cpp
         exception.cpp
-        #        filesystem/directory_iterator.cpp
-        #        filesystem/int128_builtins.cpp
-        #        filesystem/operations.cpp
+        filesystem/directory_iterator.cpp
+        filesystem/int128_builtins.cpp
+        filesystem/operations.cpp
         functional.cpp
         future.cpp
         hash.cpp
-        #        ios.cpp
-        #        ios.instantiations.cpp
-        #        iostream.cpp
-        #        locale.cpp
+        ios.cpp
+        ios.instantiations.cpp
+        iostream.cpp
+        locale.cpp
         memory.cpp
         mutex.cpp
         mutex_destructor.cpp
@@ -65,7 +67,6 @@ set(LIBCXX_EXPORT_FLAGS
         -D_LIBCPP_BUILDING_LIBRARY
         -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS
         -D_LIBCXXABI_NO_EXCEPTIONS
-        -D_LIBCPP_HAS_NO_LOCALIZATION
 )
 set(LIBCXX_FLAGS
         -fvisibility-global-new-delete-hidden

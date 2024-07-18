@@ -40,5 +40,5 @@ target_link_libraries(${MODULE_NAME} log binder utils elf_util my_logging)
 target_compile_options(${MODULE_NAME} PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
 
 add_library(tszygisk SHARED zygisk/main.cpp)
-target_link_libraries(tszygisk log my_logging)
+target_link_libraries(tszygisk log my_logging glaze::glaze)
 target_compile_options(tszygisk PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
