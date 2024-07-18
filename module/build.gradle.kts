@@ -5,6 +5,7 @@ import java.security.MessageDigest
 
 plugins {
     alias(libs.plugins.agp.app)
+    alias(libs.plugins.lsplugin.cmaker)
 }
 
 val moduleId: String by rootProject.extra
@@ -16,24 +17,15 @@ val abiList: List<String> by rootProject.extra
 val androidMinSdkVersion: Int by rootProject.extra
 
 val releaseFlags = arrayOf(
-    "-Oz", "-flto",
+    "-O3", "-flto",
     "-Wno-unused", "-Wno-unused-parameter",
-    "-Wl,--exclude-libs,ALL", "-Wl,--gc-sections",
+    "-Wl,--exclude-libs,ALL", "-Wl,-icf=all,--lto-O3", "-Wl,-s,-x,--gc-sections"
 )
 
 android {
     defaultConfig {
         ndk {
             abiFilters.addAll(abiList)
-        }
-        externalNativeBuild {
-            cmake {
-                cppFlags("-std=c++23")
-                arguments(
-                    "-DANDROID_STL=none",
-                    "-DMODULE_NAME=$moduleId"
-                )
-            }
         }
     }
 
@@ -47,13 +39,25 @@ android {
             path("src/main/cpp/CMakeLists.txt")
         }
     }
+}
+
+cmaker {
+    default {
+        val cmakeArgs = arrayOf(
+            "-DANDROID_STL=none",
+            "-DMODULE_NAME=$moduleId",
+        )
+        arguments += cmakeArgs
+        abiFilters("arm64-v8a", "x86_64")
+    }
     buildTypes {
-        release {
-            externalNativeBuild.cmake {
-                cFlags += releaseFlags
+        when (it.name) {
+            "release" -> {
                 cppFlags += releaseFlags
+                cFlags += releaseFlags
             }
         }
+        cppFlags += "--std=c++23"
     }
 }
 

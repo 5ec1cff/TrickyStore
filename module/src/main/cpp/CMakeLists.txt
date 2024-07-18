@@ -26,21 +26,21 @@ target_link_libraries(elf_util lsplt my_logging)
 
 # libutils stub
 add_library(utils SHARED binder/stub_utils.cpp)
+target_compile_options(utils PRIVATE -fvisibility=default -fno-visibility-inlines-hidden)
 target_include_directories(utils PUBLIC binder/include)
 
 # libbinder stub
 add_library(binder SHARED binder/stub_binder.cpp)
 target_include_directories(binder PUBLIC binder/include)
-target_link_libraries(binder utils)
+target_link_libraries(binder PRIVATE utils)
 
 add_executable(libinject.so inject/main.cpp inject/utils.cpp)
-target_link_libraries(libinject.so lsplt my_logging)
+target_link_libraries(libinject.so PRIVATE lsplt my_logging)
 target_compile_options(libinject.so PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
 
 add_library(${MODULE_NAME} SHARED binder_interceptor.cpp)
-target_link_libraries(${MODULE_NAME} log binder utils elf_util my_logging)
+target_link_libraries(${MODULE_NAME} PRIVATE log binder utils elf_util my_logging)
 target_compile_options(${MODULE_NAME} PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
 
 add_library(tszygisk SHARED zygisk/main.cpp)
-target_link_libraries(tszygisk log my_logging glaze::glaze)
-target_compile_options(tszygisk PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
+target_link_libraries(tszygisk PRIVATE log my_logging glaze::glaze)

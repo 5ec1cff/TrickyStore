@@ -11,5 +11,6 @@ cxx = { module = "org.lsposed.libcxx:libcxx", version = "27.0.12077973" }
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }
-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+lsplugin-cmaker = { id = "org.lsposed.lsplugin.cmaker", version = "1.2" }
