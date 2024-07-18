@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.28)
 project(sample)
+
+find_package(cxx REQUIRED CONFIG)
+link_libraries(cxx::cxx)
 
 set(LINKER_FLAGS "-ffixed-x18 -Wl,--hash-style=both")
 
@@ -14,13 +17,12 @@ add_library(elf_util STATIC elf_util/elf_util.cpp)
 add_library(my_logging STATIC logging/logging.cpp)
 
 add_subdirectory(external)
-link_libraries(cxx)
 
 target_include_directories(my_logging PUBLIC logging/include)
 target_include_directories(elf_util PUBLIC elf_util/include)
 
-target_link_libraries(my_logging cxx log)
-target_link_libraries(elf_util cxx lsplt my_logging)
+target_link_libraries(my_logging log)
+target_link_libraries(elf_util lsplt my_logging)
 
 # libutils stub
 add_library(utils SHARED binder/stub_utils.cpp)

@@ -7,6 +7,7 @@ annotation = "1.8.0"
 [libraries]
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bcpkix-jdk18on" }
+cxx = { module = "org.lsposed.libcxx:libcxx", version = "27.0.12077973" }
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }

@@ -28,7 +28,7 @@ android {
         }
         externalNativeBuild {
             cmake {
-                cppFlags("-std=c++20")
+                cppFlags("-std=c++23")
                 arguments(
                     "-DANDROID_STL=none",
                     "-DMODULE_NAME=$moduleId"
@@ -36,8 +36,14 @@ android {
             }
         }
     }
+
+    buildFeatures {
+        prefab = true
+    }
+
     externalNativeBuild {
         cmake {
+            version = "3.28.0+"
             path("src/main/cpp/CMakeLists.txt")
         }
     }
@@ -49,6 +55,10 @@ android {
             }
         }
     }
+}
+
+dependencies {
+    compileOnly(libs.cxx)
 }
 
 androidComponents.onVariants { variant ->

@@ -111,6 +111,33 @@ private:
     }
 };
 
+static inline void write_spoof_configs(const struct spoof_config& spoofConfig) {
+    std::string buffer{};
+
+    if (glz::write<glz::opts{.prettify = true}>(spoofConfig, buffer)) [[unlikely]] {
+        // This should NEVER happen, but it's not the reason we don't handle the case
+        LOGE("[write_spoof_configs] Failed to parse json to std::string");
+        return;
+    }
+
+    // Remove old one first
+    std::filesystem::remove("/data/adb/tricky_store/spoof_build_vars"sv);
+    FILE* file = fopen("/data/adb/tricky_store/spoof_build_vars", "w");
+    if (!file) [[unlikely]] {
+        LOGE("[write_spoof_configs] Failed to open spoof_build_vars");
+        return;
+    }
+
+    if (fprintf(file, "%s", buffer.c_str()) < 0) [[unlikely]] {
+        LOGE("[write_spoof_configs] Failed to write spoof_build_vars");
+        fclose(file);
+        return;
+    }
+
+    fclose(file);
+    LOGI("[write_spoof_configs] write done!");
+}
+
 static void companion_handler(int fd) {
     int enabled = access("/data/adb/tricky_store/spoof_build_vars", F_OK) == 0;
     write(fd, &enabled, sizeof(enabled));
@@ -123,11 +150,7 @@ static void companion_handler(int fd) {
     auto ec = glz::read_file_json(spoofConfig, "/data/adb/tricky_store/spoof_build_vars"sv, std::string{});
     if (ec) [[unlikely]] {
         LOGW("[companion_handler] Failed to parse spoof_build_vars, writing and using default spoof config...");
-        ec = glz::write_file_json<glz::opts{.prettify = true}>(spoofConfig, "/data/adb/tricky_store/spoof_build_vars"sv, std::string{});
-        if (ec) [[unlikely]] {
-            LOGW("[companion_handler] Failed to write spoof_build_vars");
-        }
-        LOGI("[write_spoof_configs@companion_handler] write done!");
+        write_spoof_configs(spoofConfig);
     }
 
     std::string buffer = glz::write_json(spoofConfig).value_or("");
