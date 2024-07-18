@@ -17,6 +17,11 @@ android {
             )
         }
     }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = true
+    }
 }
 
 dependencies {

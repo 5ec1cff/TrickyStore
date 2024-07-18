@@ -23,18 +23,26 @@ android {
             )
         }
     }
+
     kotlinOptions {
         jvmTarget = "17"
     }
+
     buildTypes {
         release {
             signingConfig = signingConfigs["debug"]
         }
     }
+
     packaging {
         resources {
             excludes += "**"
         }
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = true
     }
 }
 
