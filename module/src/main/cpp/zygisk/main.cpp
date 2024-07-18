@@ -29,6 +29,33 @@ struct spoof_config {
     std::string tags{"release-keys"};
 };
 
+
+ssize_t xread(int fd, void *buffer, size_t count) {
+    ssize_t total = 0;
+    char *buf = (char *)buffer;
+    while (count > 0) {
+        ssize_t ret = read(fd, buf, count);
+        if (ret < 0) return -1;
+        buf += ret;
+        total += ret;
+        count -= ret;
+    }
+    return total;
+}
+
+ssize_t xwrite(int fd, void *buffer, size_t count) {
+    ssize_t total = 0;
+    char *buf = (char *)buffer;
+    while (count > 0) {
+        ssize_t ret = write(fd, buf, count);
+        if (ret < 0) return -1;
+        buf += ret;
+        total += ret;
+        count -= ret;
+    }
+    return total;
+}
+
 class TrickyStore : public zygisk::ModuleBase {
 public:
     void onLoad(Api *api, JNIEnv *env) override {
@@ -44,15 +71,15 @@ public:
             auto fd = api_->connectCompanion();
             if (fd >= 0) [[likely]] {
                 // read enabled
-                read(fd, &enabled, sizeof(enabled));
+                xread(fd, &enabled, sizeof(enabled));
                 if (enabled) {
                     size_t bufferSize = 0;
                     std::string buffer;
                     // read size first
-                    read(fd, &bufferSize, sizeof(bufferSize));
+                    xread(fd, &bufferSize, sizeof(bufferSize));
                     // resize and receive
                     buffer.resize(bufferSize);
-                    read(fd, buffer.data(), bufferSize);
+                    xread(fd, buffer.data(), bufferSize);
                     // parse
                     if (glz::read_json(spoofConfig, buffer)) [[unlikely]] {
                         LOGE("[preAppSpecialize] spoofConfig parse error");
@@ -140,7 +167,7 @@ static inline void write_spoof_configs(const struct spoof_config& spoofConfig) {
 
 static void companion_handler(int fd) {
     int enabled = access("/data/adb/tricky_store/spoof_build_vars", F_OK) == 0;
-    write(fd, &enabled, sizeof(enabled));
+    xwrite(fd, &enabled, sizeof(enabled));
 
     if (!enabled) {
         return;
@@ -156,9 +183,9 @@ static void companion_handler(int fd) {
     std::string buffer = glz::write_json(spoofConfig).value_or("");
     size_t bufferSize = buffer.size();
     // Send buffer size first
-    write(fd, &bufferSize, sizeof(bufferSize));
+    xwrite(fd, &bufferSize, sizeof(bufferSize));
     // client resize string stl and receive buffer
-    write(fd, buffer.data(), bufferSize);
+    xwrite(fd, buffer.data(), bufferSize);
 }
 
 // Register our module class and the companion handler function
