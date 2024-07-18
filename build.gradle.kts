@@ -33,12 +33,12 @@ val androidMinSdkVersion by extra(31)
 val androidTargetSdkVersion by extra(34)
 val androidCompileSdkVersion by extra(34)
 val androidBuildToolsVersion by extra("34.0.0")
-val androidCompileNdkVersion by extra("27.0.11902837")
+val androidCompileNdkVersion by extra("27.0.12077973")
 val androidSourceCompatibility by extra(JavaVersion.VERSION_17)
 val androidTargetCompatibility by extra(JavaVersion.VERSION_17)
 
 tasks.register("Delete", Delete::class) {
-    delete(rootProject.buildDir)
+    delete(layout.buildDirectory)
 }
 
 fun Project.configureBaseExtension() {
@@ -72,6 +72,7 @@ fun Project.configureBaseExtension() {
         }
 
         lint {
+            checkReleaseBuilds = false
             abortOnError = true
         }
 

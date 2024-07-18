@@ -43,6 +43,28 @@ format:
 If you can not pass strong integrity, you can try to enable build vars spoofing
 by creating a file `/data/adb/tricky_store/spoof_build_vars`.
 
+After doing that, TrickyStore will automatically generate an example config json
+inside `/data/adb/tricky_store/spoof_build_vars` on next reboot. Then you can manually
+edit your spoof config.
+
+Here is an example of spoof config:
+
+```json
+{
+   "manufacturer": "Google",
+   "model": "Pixel",
+   "fingerprint": "google/sailfish/sailfish:8.1.0/OPM1.171019.011/4448085:user/release-keys",
+   "brand": "google",
+   "product": "sailfish",
+   "device": "sailfish",
+   "release": "8.1.0",
+   "id": "OPM1.171019.011",
+   "incremental": "4448085",
+   "security_patch": "2017-12-05",
+   "type": "user",
+   "tags": "release-keys"
+}
+```
 Zygisk (or Zygisk Next) is needed for this feature to work.
 
 ## Support TEE broken devices
@@ -72,4 +94,5 @@ com.google.android.gms!
 - [FrameworkPatch](https://github.com/chiteroman/FrameworkPatch)
 - [BootloaderSpoofer](https://github.com/chiteroman/BootloaderSpoofer)
 - [KeystoreInjection](https://github.com/aviraxp/Zygisk-KeystoreInjection)
-- [LSPosed](https://github.com/LSPosed/LSPosed)  
+- [LSPosed](https://github.com/LSPosed/LSPosed)
+- [Glaze](https://github.com/stephenberry/glaze)

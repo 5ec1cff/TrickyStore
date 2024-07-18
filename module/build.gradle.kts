@@ -5,6 +5,7 @@ import java.security.MessageDigest
 
 plugins {
     alias(libs.plugins.agp.app)
+    alias(libs.plugins.lsplugin.cmaker)
 }
 
 val moduleId: String by rootProject.extra
@@ -16,9 +17,9 @@ val abiList: List<String> by rootProject.extra
 val androidMinSdkVersion: Int by rootProject.extra
 
 val releaseFlags = arrayOf(
-    "-Oz", "-flto",
+    "-O3", "-flto",
     "-Wno-unused", "-Wno-unused-parameter",
-    "-Wl,--exclude-libs,ALL", "-Wl,--gc-sections",
+    "-Wl,--exclude-libs,ALL", "-Wl,-icf=all,--lto-O3", "-Wl,-s,-x,--gc-sections"
 )
 
 android {
@@ -26,29 +27,61 @@ android {
         ndk {
             abiFilters.addAll(abiList)
         }
-        externalNativeBuild {
-            cmake {
-                cppFlags("-std=c++20")
-                arguments(
-                    "-DANDROID_STL=none",
-                    "-DMODULE_NAME=$moduleId"
-                )
-            }
-        }
     }
+
+    buildFeatures {
+        prefab = true
+    }
+
     externalNativeBuild {
         cmake {
+            version = "3.28.0+"
             path("src/main/cpp/CMakeLists.txt")
         }
     }
+}
+
+cmaker {
+    default {
+        val cmakeArgs = arrayOf(
+            "-DANDROID_STL=none",
+            "-DMODULE_NAME=$moduleId",
+        )
+        arguments += cmakeArgs
+        abiFilters("arm64-v8a", "x86_64")
+    }
     buildTypes {
-        release {
-            externalNativeBuild.cmake {
-                cFlags += releaseFlags
+        when (it.name) {
+            "release" -> {
                 cppFlags += releaseFlags
+                cFlags += releaseFlags
             }
         }
+        val commonFlags = arrayOf(
+            // Silent noisy warnings
+            "-Wno-reorder-ctor",
+            "-Wno-overloaded-virtual",
+            "-Wno-unused-function",
+            "-Wno-unused-but-set-variable",
+            "-Wno-unused-private-field",
+            "-Wno-missing-braces",
+            "-Wno-delete-non-abstract-non-virtual-dtor",
+            "-Wno-unused-variable",
+            "-Wno-sometimes-uninitialized",
+            "-Wno-logical-op-parentheses",
+            "-Wno-shift-count-overflow",
+            "-Wno-deprecated-declarations",
+            "-Wno-infinite-recursion",
+            "-Wno-format",
+            "-Wno-deprecated-volatile",
+        )
+        cppFlags += commonFlags
+        cFlags += commonFlags
     }
+}
+
+dependencies {
+    compileOnly(libs.cxx)
 }
 
 androidComponents.onVariants { variant ->

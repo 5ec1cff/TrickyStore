@@ -1,5 +1,5 @@
 [versions]
-agp = "8.5.0"
+agp = "8.5.1"
 bcpkix-jdk18on = "1.78.1"
 kotlin = "2.0.0"
 annotation = "1.8.0"
@@ -7,8 +7,10 @@ annotation = "1.8.0"
 [libraries]
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bcpkix-jdk18on" }
+cxx = { module = "org.lsposed.libcxx:libcxx", version = "27.0.12077973" }
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }
-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+lsplugin-cmaker = { id = "org.lsposed.lsplugin.cmaker", version = "1.2" }
