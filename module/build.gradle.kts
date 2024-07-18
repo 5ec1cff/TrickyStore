@@ -57,7 +57,26 @@ cmaker {
                 cFlags += releaseFlags
             }
         }
-        cppFlags += "--std=c++23"
+        val commonFlags = arrayOf(
+            // Silent noisy warnings
+            "-Wno-reorder-ctor",
+            "-Wno-overloaded-virtual",
+            "-Wno-unused-function",
+            "-Wno-unused-but-set-variable",
+            "-Wno-unused-private-field",
+            "-Wno-missing-braces",
+            "-Wno-delete-non-abstract-non-virtual-dtor",
+            "-Wno-unused-variable",
+            "-Wno-sometimes-uninitialized",
+            "-Wno-logical-op-parentheses",
+            "-Wno-shift-count-overflow",
+            "-Wno-deprecated-declarations",
+            "-Wno-infinite-recursion",
+            "-Wno-format",
+            "-Wno-deprecated-volatile",
+        )
+        cppFlags += commonFlags
+        cFlags += commonFlags
     }
 }
 

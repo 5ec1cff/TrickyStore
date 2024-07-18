@@ -1,14 +1,20 @@
 cmake_minimum_required(VERSION 3.28)
 project(sample)
 
+if (CCACHE)
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
+    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE})
+endif ()
+
 find_package(cxx REQUIRED CONFIG)
 link_libraries(cxx::cxx)
 
+find_program(CCACHE ccache)
+
 set(LINKER_FLAGS "-ffixed-x18 -Wl,--hash-style=both")
 
-set(CXX_FLAGS "${CXX_FLAGS} -fno-exceptions -fno-rtti")
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS}")
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti")
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${LINKER_FLAGS}")
