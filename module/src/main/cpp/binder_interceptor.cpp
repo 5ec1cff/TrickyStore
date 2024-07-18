@@ -19,11 +19,8 @@
 #include "lsplt.hpp"
 #include "elf_util.h"
 
-#include "hook_util/hook_helper.hpp"
-
 using namespace SandHook;
 using namespace android;
-using namespace hook_helper::literals;
 
 class BinderInterceptor : public BBinder {
     enum {
@@ -349,6 +346,6 @@ bool hookBinder() {
 }
 
 extern "C" [[gnu::visibility("default")]] [[gnu::used]] bool entry(void *handle) {
-    LOGI("my handle %p", handle);
+    LOGI("injected, my handle %p", handle);
     return hookBinder();
 }

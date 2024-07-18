@@ -27,7 +27,7 @@ namespace android {
 #endif
     BBinder::BBinder() {}
 
-    const String16& BBinder::getInterfaceDescriptor() const { return {}; }
+    const String16 &BBinder::getInterfaceDescriptor() const { __builtin_unreachable(); }
     bool BBinder::isBinderAlive() const { return false; }
     status_t BBinder::pingBinder() { return 0; }
     status_t BBinder::dump(int fd, const Vector<String16>& args) { return 0; }
@@ -152,7 +152,7 @@ namespace android {
 
     // IServiceManager.h
     const String16 &IServiceManager::getInterfaceDescriptor() const {
-        return {};
+        __builtin_unreachable();
     }
 
     IServiceManager::IServiceManager() {}

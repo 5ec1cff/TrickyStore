@@ -190,5 +190,4 @@ static void companion_handler(int fd) {
 
 // Register our module class and the companion handler function
 REGISTER_ZYGISK_MODULE(TrickyStore)
-
 REGISTER_ZYGISK_COMPANION(companion_handler)

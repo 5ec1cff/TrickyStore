@@ -10,7 +10,9 @@
 #include <linux/types.h>
 #include <linux/ioctl.h>
 
+#ifndef B_PACK_CHARS
 #define B_PACK_CHARS(c1, c2, c3, c4) ((((c1) << 24)) | (((c2) << 16)) | (((c3) << 8)) | (c4))
+#endif
 #define B_TYPE_LARGE 0x85
 enum {
     BINDER_TYPE_BINDER = B_PACK_CHARS('s', 'b', '*', B_TYPE_LARGE),
