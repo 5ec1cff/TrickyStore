@@ -379,9 +379,11 @@ public final class CertHack {
             var bootPatchLevel = new DERTaggedObject(true, 719, AbootPatchlevel);
 
             ASN1Encodable[] teeEnforcedEncodables = {purpose, algorithm, keySize, digest, ecCurve,
-                    noAuthRequired, creationDateTime, origin, rootOfTrust, osVersion, osPatchLevel, applicationID, vendorPatchLevel, bootPatchLevel};
+                    noAuthRequired, origin, rootOfTrust, osVersion, osPatchLevel, vendorPatchLevel, bootPatchLevel};
 
-            ASN1OctetString keyDescriptionOctetStr = getAsn1OctetString(teeEnforcedEncodables, params);
+            ASN1Encodable[] softwareEnforced = {applicationID, creationDateTime};
+
+            ASN1OctetString keyDescriptionOctetStr = getAsn1OctetString(teeEnforcedEncodables, softwareEnforced, params);
 
             return new Extension(new ASN1ObjectIdentifier("1.3.6.1.4.1.11129.2.1.17"), false, keyDescriptionOctetStr);
         } catch (Throwable t) {
@@ -390,14 +392,14 @@ public final class CertHack {
         return null;
     }
 
-    private static ASN1OctetString getAsn1OctetString(ASN1Encodable[] teeEnforcedEncodables, KeyGenParameters params) throws IOException {
+    private static ASN1OctetString getAsn1OctetString(ASN1Encodable[] teeEnforcedEncodables, ASN1Encodable[] softwareEnforcedEncodables, KeyGenParameters params) throws IOException {
         ASN1Integer attestationVersion = new ASN1Integer(100);
         ASN1Enumerated attestationSecurityLevel = new ASN1Enumerated(1);
         ASN1Integer keymasterVersion = new ASN1Integer(100);
         ASN1Enumerated keymasterSecurityLevel = new ASN1Enumerated(1);
         ASN1OctetString attestationChallenge = new DEROctetString(params.attestationChallenge);
         ASN1OctetString uniqueId = new DEROctetString("".getBytes());
-        ASN1Sequence softwareEnforced = new DERSequence();
+        ASN1Encodable softwareEnforced = new DERSequence(softwareEnforcedEncodables);
         ASN1Sequence teeEnforced = new DERSequence(teeEnforcedEncodables);
 
         ASN1Encodable[] keyDescriptionEncodables = {attestationVersion, attestationSecurityLevel, keymasterVersion,
