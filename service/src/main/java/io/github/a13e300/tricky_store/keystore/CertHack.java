@@ -164,8 +164,8 @@ public final class CertHack {
             byte[] bytes = leaf.getExtensionValue(OID.getId());
             if (bytes == null) return caList;
 
-            X509CertificateHolder holder = new X509CertificateHolder(leaf.getEncoded());
-            Extension ext = holder.getExtension(OID);
+            X509CertificateHolder leafHolder = new X509CertificateHolder(leaf.getEncoded());
+            Extension ext = leafHolder.getExtension(OID);
             ASN1Sequence sequence = ASN1Sequence.getInstance(ext.getExtnValue().getOctets());
             ASN1Encodable[] encodables = sequence.toArray();
             ASN1Sequence teeEnforced = (ASN1Sequence) encodables[7];
@@ -192,11 +192,11 @@ public final class CertHack {
                     new X509CertificateHolder(
                             certificates.get(0).getEncoded()
                     ).getSubject(),
-                    holder.getSerialNumber(),
-                    holder.getNotBefore(),
-                    holder.getNotAfter(),
-                    holder.getSubject(),
-                    k.pemKeyPair.getPublicKeyInfo()
+                    leafHolder.getSerialNumber(),
+                    leafHolder.getNotBefore(),
+                    leafHolder.getNotAfter(),
+                    leafHolder.getSubject(),
+                    leafHolder.getSubjectPublicKeyInfo()
             );
             signer = new JcaContentSignerBuilder(leaf.getSigAlgName())
                     .build(k.keyPair.getPrivate());
@@ -236,9 +236,9 @@ public final class CertHack {
             Extension hackedExt = new Extension(OID, false, hackedSeqOctets);
             builder.addExtension(hackedExt);
 
-            for (ASN1ObjectIdentifier extensionOID : holder.getExtensions().getExtensionOIDs()) {
+            for (ASN1ObjectIdentifier extensionOID : leafHolder.getExtensions().getExtensionOIDs()) {
                 if (OID.getId().equals(extensionOID.getId())) continue;
-                builder.addExtension(holder.getExtension(extensionOID));
+                builder.addExtension(leafHolder.getExtension(extensionOID));
             }
             certificates.addFirst(new JcaX509CertificateConverter().getCertificate(builder.build(signer)));
 
