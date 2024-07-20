@@ -13,8 +13,8 @@
 #define LOGD(...)  logging::log(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGV(...)  logging::log(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
 #else
-#define LOGD(...)
-#define LOGV(...)
+#define LOGD(...) (void)0
+#define LOGV(...) (void)0
 #endif
 #define LOGI(...)  logging::log(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...)  logging::log(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)

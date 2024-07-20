@@ -51,21 +51,19 @@ edit your spoof config.
 
 Here is an example of spoof config:
 
-```json
-{
-   "manufacturer": "Google",
-   "model": "Pixel",
-   "fingerprint": "google/sailfish/sailfish:8.1.0/OPM1.171019.011/4448085:user/release-keys",
-   "brand": "google",
-   "product": "sailfish",
-   "device": "sailfish",
-   "release": "8.1.0",
-   "id": "OPM1.171019.011",
-   "incremental": "4448085",
-   "security_patch": "2017-12-05",
-   "type": "user",
-   "tags": "release-keys"
-}
+```
+MANUFACTURER=Google
+MODEL=Pixel
+FINGERPRINT=google/sailfish/sailfish:8.1.0/OPM1.171019.011/4448085:user/release-keys
+BRAND=google
+PRODUCT=sailfish
+DEVICE=sailfish
+RELEASE=8.1.0
+ID=OPM1.171019.011
+INCREMENTAL=4448085
+TYPE=user
+TAGS=release-keys
+SECURITY_PATCH=2017-12-05
 ```
 
 ## Support TEE broken devices
