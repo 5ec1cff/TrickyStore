@@ -104,19 +104,6 @@ public:
 
     void preAppSpecialize(AppSpecializeArgs *args) override {
         api_->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
-        int enabled = 0;
-        SpoofConfig spoofConfig{};
-        auto fd = api_->connectCompanion();
-        if (fd >= 0) [[likely]] {
-            // read enabled
-            xread(fd, &enabled, sizeof(enabled));
-            if (enabled) {
-                xread(fd, &spoofConfig, sizeof(spoofConfig));
-            }
-            close(fd);
-        }
-
-        if (!enabled) return;
         if (args->app_data_dir == nullptr) {
             return;
         }
@@ -129,6 +116,18 @@ public:
 
         if (dir.ends_with("/com.google.android.gms") &&
             process == "com.google.android.gms.unstable") {
+            int enabled = 0;
+            SpoofConfig spoofConfig{};
+            auto fd = api_->connectCompanion();
+            if (fd >= 0) [[likely]] {
+                // read enabled
+                xread(fd, &enabled, sizeof(enabled));
+                if (enabled) {
+                    xread(fd, &spoofConfig, sizeof(spoofConfig));
+                }
+                close(fd);
+            }
+            if (!enabled) return;
             LOGI("spoofing build vars in GMS!");
             auto buildClass = env_->FindClass("android/os/Build");
             auto buildVersionClass = env_->FindClass("android/os/Build$VERSION");
@@ -145,7 +144,9 @@ public:
                          std::remove_cvref_t<decltype(args)>::getField(),
                          args.value.data()), true))
                   ? void(0)
-                  : LOGE("Failed to set %s to %s", std::remove_cvref_t<decltype(args)>::getField(),
+                  : LOGE("%s failed to set %s to %s",
+                         std::remove_cvref_t<decltype(args)>::isVersion() ? "VERSION" : "Build",
+                         std::remove_cvref_t<decltype(args)>::getField(),
                          args.value.data())), ...);
             }, spoofConfig);
         }
@@ -202,6 +203,45 @@ private:
     }
 };
 
+void read_config(FILE *config, SpoofConfig &spoof_config) {
+    char *l = nullptr;
+    struct finally {
+        char *(&l);
+
+        ~finally() { free(l); }
+    } finally{l};
+    size_t len = 0;
+    ssize_t n;
+    while ((n = getline(&l, &len, config)) != -1) {
+        if (n <= 1) continue;
+        std::string_view line{l, static_cast<size_t>(n)};
+        if (line.back() == '\n') {
+            line.remove_suffix(1);
+        }
+        auto d = line.find_first_of('=');
+        if (d == std::string_view::npos) {
+            LOGW("Ignore invalid line %.*s", static_cast<int>(line.size()), line.data());
+            continue;
+        }
+        auto key = line.substr(0, d);
+        trim(key);
+        auto value = line.substr(d + 1);
+        trim(value);
+        std::apply([&key, &value](auto &&... args) {
+            ((key == std::remove_cvref_t<decltype(args)>::getField() &&
+              (LOGD("Read config: %.*s = %.*s", static_cast<int>(key.size()), key.data(),
+                    static_cast<int>(value.size()), value.data()),
+                      args.value.size() >= value.size() + 1 ?
+                      (args.has_value = true,
+                              strlcpy(args.value.data(), value.data(),
+                                      std::min(args.value.size(), value.size() + 1))) :
+                      (LOGW("Config value %.*s for %.*s is too long, ignored",
+                            static_cast<int>(value.size()), value.data(),
+                            static_cast<int>(key.size()), key.data()), true))) || ...);
+        }, spoof_config);
+    }
+}
+
 static void companion_handler(int fd) {
     constexpr auto kSpoofConfigFile = "/data/adb/tricky_store/spoof_build_vars"sv;
     constexpr auto kDefaultSpoofConfig =
@@ -240,43 +280,10 @@ SECURITY_PATCH=2017-12-05
         LOGE("[companion_handler] Failed to open spoof_build_vars");
         return;
     }
-    SpoofConfig spoof_config{};
 
-    {
-        std::unique_ptr<FILE, decltype([](auto *f) {fclose(f); })> config {fdopen(cfd, "r")};
-        char *l = nullptr;
-        struct finally { char *l; ~finally() { free(l); } } finally{l};
-        size_t len = 0;
-        ssize_t n;
-        while ((n = getline(&l, &len, config.get())) != -1) {
-            if (n == 0) continue;
-            std::string_view line{l, static_cast<size_t>(n)};
-            if (line.back() == '\n') {
-                line.remove_suffix(1);
-            }
-            auto d = line.find_first_of('=');
-            if (d == std::string_view::npos) {
-                LOGW("Ignore invalid line %.*s", static_cast<int>(line.size()), line.data());
-                continue;
-            }
-            auto key = line.substr(0, d);
-            trim(key);
-            auto value = line.substr(d + 1);
-            trim(value);
-            std::apply([&key, &value](auto &&... args) {
-                ((key == std::remove_cvref_t<decltype(args)>::getField() &&
-                  (LOGD("Read config: %.*s = %.*s", static_cast<int>(key.size()), key.data(),
-                        static_cast<int>(value.size()), value.data()),
-                          args.value.size() >= value.size() + 1 ?
-                          (args.has_value = true,
-                                  strlcpy(args.value.data(), value.data(),
-                                          std::min(args.value.size(), value.size() + 1))) :
-                          (LOGW("Config value %.*s for %.*s is too long, ignored",
-                                static_cast<int>(value.size()), value.data(),
-                                static_cast<int>(key.size()), key.data()), true))) || ...);
-            }, spoof_config);
-        }
-    }
+    SpoofConfig spoof_config{};
+    std::unique_ptr<FILE, decltype([](auto *f) { fclose(f); })> config{fdopen(cfd, "r")};
+    read_config(config.get(), spoof_config);
 
     xwrite(fd, &spoof_config, sizeof(spoof_config));
 }
