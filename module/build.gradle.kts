@@ -16,12 +16,6 @@ val commitHash: String by rootProject.extra
 val abiList: List<String> by rootProject.extra
 val androidMinSdkVersion: Int by rootProject.extra
 
-val releaseFlags = arrayOf(
-    "-O3", "-flto",
-    "-Wno-unused", "-Wno-unused-parameter",
-    "-Wl,--exclude-libs,ALL", "-Wl,-icf=all,--lto-O3", "-Wl,-s,-x,--gc-sections"
-)
-
 android {
     defaultConfig {
         ndk {
@@ -43,45 +37,24 @@ android {
 
 cmaker {
     default {
-        val cmakeArgs = arrayOf(
+        arguments += arrayOf(
             "-DANDROID_STL=none",
+            "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+            "-DANDROID_ALLOW_UNDEFINED_SYMBOLS=ON",
             "-DMODULE_NAME=$moduleId",
-        )
-        arguments += cmakeArgs
-        abiFilters("arm64-v8a", "x86_64")
-    }
-    buildTypes {
-        when (it.name) {
-            "release" -> {
-                cppFlags += releaseFlags
-                cFlags += releaseFlags
-            }
-        }
-        val commonFlags = arrayOf(
-            // Silent noisy warnings
-            "-Wno-reorder-ctor",
-            "-Wno-overloaded-virtual",
-            "-Wno-unused-function",
-            "-Wno-unused-but-set-variable",
-            "-Wno-unused-private-field",
-            "-Wno-missing-braces",
-            "-Wno-delete-non-abstract-non-virtual-dtor",
-            "-Wno-unused-variable",
-            "-Wno-sometimes-uninitialized",
-            "-Wno-logical-op-parentheses",
-            "-Wno-shift-count-overflow",
-            "-Wno-deprecated-declarations",
-            "-Wno-infinite-recursion",
-            "-Wno-format",
-            "-Wno-deprecated-volatile",
-        )
-        cppFlags += commonFlags
-        cFlags += commonFlags
+            "-DCMAKE_CXX_STANDARD=23",
+            "-DCMAKE_C_STANDARD=23",
+            "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON",
+            "-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON",
+            "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
+            "-DCMAKE_C_VISIBILITY_PRESET=hidden",
+            )
+        abiFilters(*abiList.toTypedArray())
     }
 }
 
 dependencies {
-    compileOnly(libs.cxx)
+    implementation(libs.cxx)
 }
 
 androidComponents.onVariants { variant ->
