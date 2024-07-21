@@ -3,12 +3,20 @@ package io.github.a13e300.tricky_store
 import android.content.pm.IPackageManager
 import android.os.FileObserver
 import android.os.ServiceManager
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+
 import io.github.a13e300.tricky_store.keystore.CertHack
+
 import java.io.File
+import java.security.KeyPairGenerator
+import java.security.spec.ECGenParameterSpec
+import java.util.Date
 
 object Config {
     private val hackPackages = mutableSetOf<String>()
     private val generatePackages = mutableSetOf<String>()
+    private var canHackLeaf: Boolean = true
 
     private fun updateTargetPackages(f: File?) = runCatching {
         hackPackages.clear()
@@ -16,13 +24,32 @@ object Config {
         f?.readLines()?.forEach {
             if (it.isNotBlank() && !it.startsWith("#")) {
                 val n = it.trim()
-                if (n.endsWith("!")) generatePackages.add(n.removeSuffix("!").trim())
+                if (!canHackLeaf || n.endsWith("!")) generatePackages.add(
+                    n.removeSuffix("!").trim()
+                )
                 else hackPackages.add(n)
             }
         }
         Logger.i("update hack packages: $hackPackages, generate packages=$generatePackages")
     }.onFailure {
         Logger.e("failed to update target files", it)
+    }
+
+    private fun canHackLeaf(): Boolean = runCatching {
+        val builder = KeyGenParameterSpec.Builder("TrickyStore", KeyProperties.PURPOSE_SIGN)
+            .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
+            .setDigests(KeyProperties.DIGEST_SHA256)
+            .setCertificateNotBefore(Date())
+            .setAttestationChallenge(Date().toString().toByteArray())
+        val keyPairGenerator = KeyPairGenerator.getInstance(
+            KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore"
+        )
+        keyPairGenerator.initialize(builder.build())
+        keyPairGenerator.generateKeyPair()
+        true
+    }.getOrElse {
+        Logger.i("cannot generate keypair, always generating it on our own")
+        false
     }
 
     private fun updateKeyBox(f: File?) = runCatching {
@@ -52,6 +79,7 @@ object Config {
     }
 
     fun initialize() {
+        canHackLeaf = canHackLeaf()
         root.mkdirs()
         val scope = File(root, TARGET_FILE)
         if (scope.exists()) {
