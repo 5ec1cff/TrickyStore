@@ -271,7 +271,7 @@ SECURITY_PATCH=2017-12-05
     if (st.st_size == 0) {
         cfd = open(kSpoofConfigFile.data(), O_RDWR);
         if (cfd > 0) {
-            xwrite(fd, kDefaultSpoofConfig.data(), kDefaultSpoofConfig.size());
+            xwrite(cfd, kDefaultSpoofConfig.data(), kDefaultSpoofConfig.size());
             lseek(cfd, 0, SEEK_SET);
         }
     } else {
