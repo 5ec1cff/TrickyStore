@@ -41,6 +41,7 @@ cmaker {
             "-DANDROID_STL=none",
             "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
             "-DANDROID_ALLOW_UNDEFINED_SYMBOLS=ON",
+            "-DANDROID_CPP_FEATURES=no-rtti no-exceptions",
             "-DMODULE_NAME=$moduleId",
             "-DCMAKE_CXX_STANDARD=23",
             "-DCMAKE_C_STANDARD=23",
