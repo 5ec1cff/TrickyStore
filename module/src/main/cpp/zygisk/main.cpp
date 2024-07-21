@@ -127,28 +127,29 @@ public:
                 }
                 close(fd);
             }
-            if (!enabled) return;
-            LOGI("spoofing build vars in GMS!");
-            auto buildClass = env_->FindClass("android/os/Build");
-            auto buildVersionClass = env_->FindClass("android/os/Build$VERSION");
+            if (enabled) {
+                LOGI("spoofing build vars in GMS!");
+                auto buildClass = env_->FindClass("android/os/Build");
+                auto buildVersionClass = env_->FindClass("android/os/Build$VERSION");
 
-            std::apply([this, &buildClass, &buildVersionClass](auto &&... args) {
-                ((!args.has_value ||
-                  (setField<typename std::remove_cvref_t<decltype(args)>::Type>(
-                          std::remove_cvref_t<decltype(args)>::isVersion() ? buildVersionClass
-                                                                           : buildClass,
-                          std::remove_cvref_t<decltype(args)>::getField(),
-                          args.value) &&
-                   (LOGI("%s set %s to %s",
-                         std::remove_cvref_t<decltype(args)>::isVersion() ? "VERSION" : "Build",
-                         std::remove_cvref_t<decltype(args)>::getField(),
-                         args.value.data()), true))
-                  ? void(0)
-                  : LOGE("%s failed to set %s to %s",
-                         std::remove_cvref_t<decltype(args)>::isVersion() ? "VERSION" : "Build",
-                         std::remove_cvref_t<decltype(args)>::getField(),
-                         args.value.data())), ...);
-            }, spoofConfig);
+                std::apply([this, &buildClass, &buildVersionClass](auto &&... args) {
+                    ((!args.has_value ||
+                      (setField<typename std::remove_cvref_t<decltype(args)>::Type>(
+                              std::remove_cvref_t<decltype(args)>::isVersion() ? buildVersionClass
+                                                                               : buildClass,
+                              std::remove_cvref_t<decltype(args)>::getField(),
+                              args.value) &&
+                       (LOGI("%s set %s to %s",
+                             std::remove_cvref_t<decltype(args)>::isVersion() ? "VERSION" : "Build",
+                             std::remove_cvref_t<decltype(args)>::getField(),
+                             args.value.data()), true))
+                      ? void(0)
+                      : LOGE("%s failed to set %s to %s",
+                             std::remove_cvref_t<decltype(args)>::isVersion() ? "VERSION" : "Build",
+                             std::remove_cvref_t<decltype(args)>::getField(),
+                             args.value.data())), ...);
+                }, spoofConfig);
+            }
         }
 
         env_->ReleaseStringUTFChars(args->nice_name, nice_name);
