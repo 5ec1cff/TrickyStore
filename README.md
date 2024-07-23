@@ -5,7 +5,7 @@ A trick of keystore. **Android 12 or above is required**.
 ## Usage
 
 1. Flash this module and reboot.  
-2. Put keybox.xml at `/data/adb/tricky_store/keybox.xml`.  
+2. For more than DEVICE integrity, put an unrevoked hardware keybox.xml at `/data/adb/tricky_store/keybox.xml` (Optional).  
 3. Customize target packages at `/data/adb/tricky_store/target.txt` (Optional).  
 4. Enjoy!  
 
@@ -42,7 +42,7 @@ format:
 
 > **Zygisk (or Zygisk Next) is needed for this feature to work.**
 
-If you cannot pass strong integrity, you can try enabling build vars spoofing by creating the file `/data/adb/tricky_store/spoof_build_vars`.
+If you still cannot pass STRONG integrity with an unrevoked hardware keybox, you can try enabling build vars spoofing by creating the file `/data/adb/tricky_store/spoof_build_vars`.
 
 Tricky Store will automatically generate example config props inside `/data/adb/tricky_store/spoof_build_vars` on next reboot, then you can manually edit your spoof config.
 

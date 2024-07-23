@@ -93,9 +93,14 @@ CONFIG_DIR=/data/adb/tricky_store
 if [ ! -d "$CONFIG_DIR" ]; then
   ui_print "- Creating configuration directory"
   mkdir -p "$CONFIG_DIR"
-  if [ ! -f "$CONFIG_DIR/target.txt" ]; then
-    ui_print "- Adding default scope"
-    extract "$ZIPFILE" 'target.txt' "$TMPDIR"
-    mv "$TMPDIR/target.txt" "$CONFIG_DIR/target.txt"
-  fi
+fi
+if [ ! -f "$CONFIG_DIR/keybox.xml" ]; then
+  ui_print "- Adding default software keybox"
+  extract "$ZIPFILE" 'keybox.xml' "$TMPDIR"
+  mv "$TMPDIR/keybox.xml" "$CONFIG_DIR/keybox.xml"
+fi
+if [ ! -f "$CONFIG_DIR/target.txt" ]; then
+  ui_print "- Adding default target scope"
+  extract "$ZIPFILE" 'target.txt' "$TMPDIR"
+  mv "$TMPDIR/target.txt" "$CONFIG_DIR/target.txt"
 fi
