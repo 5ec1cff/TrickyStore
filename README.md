@@ -5,8 +5,8 @@ A trick of keystore. **Android 12 or above is required**.
 ## Usage
 
 1. Flash this module and reboot.  
-2. Put keybox.xml to /data/adb/tricky_store/keybox.xml .  
-3. Put target packages to /data/adb/tricky_store/target.txt (Optional).  
+2. Put keybox.xml at `/data/adb/tricky_store/keybox.xml`.  
+3. Customize target packages at `/data/adb/tricky_store/target.txt` (Optional).  
 4. Enjoy!  
 
 ## keybox.xml
@@ -42,12 +42,9 @@ format:
 
 > **Zygisk (or Zygisk Next) is needed for this feature to work.**
 
-If you can not pass strong integrity, you can try to enable build vars spoofing
-by creating a file `/data/adb/tricky_store/spoof_build_vars`.
+If you cannot pass strong integrity, you can try enabling build vars spoofing by creating the file `/data/adb/tricky_store/spoof_build_vars`.
 
-After doing that, TrickyStore will automatically generate an example config json
-inside `/data/adb/tricky_store/spoof_build_vars` on next reboot. Then you can manually
-edit your spoof config.
+Tricky Store will automatically generate example config props inside `/data/adb/tricky_store/spoof_build_vars` on next reboot, then you can manually edit your spoof config.
 
 Here is an example of spoof config:
 
@@ -68,9 +65,7 @@ SECURITY_PATCH=2017-12-05
 
 ## Support TEE broken devices
 
-TrickyStore will hack leaf certificate by default.
-On TEE broken devices, this will not work because we can't retrieve leaf certificate from TEE.
-You can add a `!` after package name to enable certificate generate support for this package.
+Tricky Store will hack the leaf certificate by default. On TEE broken devices, this will not work because we can't retrieve the leaf certificate from TEE. You can add a `!` after a package name to enable generate certificate support for this package.
 
 For example:
 
@@ -82,7 +77,7 @@ io.github.vvb2060.keyattestation
 com.google.android.gms!
 ```
 
-## Known issue
+## Known issues
 
 - App Attest Key is not supported.
 - StrongBox is not supported.
@@ -94,4 +89,3 @@ com.google.android.gms!
 - [BootloaderSpoofer](https://github.com/chiteroman/BootloaderSpoofer)
 - [KeystoreInjection](https://github.com/aviraxp/Zygisk-KeystoreInjection)
 - [LSPosed](https://github.com/LSPosed/LSPosed)
-- [Glaze](https://github.com/stephenberry/glaze)
