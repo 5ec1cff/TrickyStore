@@ -58,7 +58,7 @@ using SpoofConfig = std::tuple<
     Prop<jstring, "TYPE">,
     Prop<jstring, "TAGS">,
     Prop<jstring, "SECURITY_PATCH", true>,
-    Prop<jstring, "BRAND">,
+    Prop<jstring, "BOARD">,
     Prop<jstring, "HARDWARE">,
     Prop<jint, "DEVICE_INITIAL_SDK_INT", true>
 >;
