@@ -111,49 +111,58 @@ public:
         auto app_data_dir = env_->GetStringUTFChars(args->app_data_dir, nullptr);
         auto nice_name = env_->GetStringUTFChars(args->nice_name, nullptr);
 
-        std::string_view process(nice_name);
         std::string_view dir(app_data_dir);
+        std::string_view process(nice_name);
 
-        if (dir.ends_with("/com.google.android.gms") &&
-            process == "com.google.android.gms.unstable") {
-            int enabled = 0;
-            SpoofConfig spoofConfig{};
-            auto fd = api_->connectCompanion();
-            if (fd >= 0) [[likely]] {
-                // read enabled
-                xread(fd, &enabled, sizeof(enabled));
-                if (enabled) {
-                    xread(fd, &spoofConfig, sizeof(spoofConfig));
-                }
-                close(fd);
-            }
-            if (enabled) {
-                LOGI("spoofing build vars in GMS!");
-                auto buildClass = env_->FindClass("android/os/Build");
-                auto buildVersionClass = env_->FindClass("android/os/Build$VERSION");
+        bool isGms = false, isGmsUnstable = false;
+        isGms = dir.ends_with("/com.google.android.gms");
+        isGmsUnstable = process == "com.google.android.gms.unstable";
 
-                std::apply([this, &buildClass, &buildVersionClass](auto &&... args) {
-                    ((!args.has_value ||
-                      (setField<typename std::remove_cvref_t<decltype(args)>::Type>(
-                              std::remove_cvref_t<decltype(args)>::isVersion() ? buildVersionClass
-                                                                               : buildClass,
-                              std::remove_cvref_t<decltype(args)>::getField(),
-                              args.value) &&
-                       (LOGI("%s set %s to %s",
-                             std::remove_cvref_t<decltype(args)>::isVersion() ? "VERSION" : "Build",
-                             std::remove_cvref_t<decltype(args)>::getField(),
-                             args.value.data()), true))
-                      ? void(0)
-                      : LOGE("%s failed to set %s to %s",
-                             std::remove_cvref_t<decltype(args)>::isVersion() ? "VERSION" : "Build",
-                             std::remove_cvref_t<decltype(args)>::getField(),
-                             args.value.data())), ...);
-                }, spoofConfig);
-            }
-        }
-
-        env_->ReleaseStringUTFChars(args->nice_name, nice_name);
         env_->ReleaseStringUTFChars(args->app_data_dir, app_data_dir);
+        env_->ReleaseStringUTFChars(args->nice_name, nice_name);
+
+        if (!isGms) {
+            return;
+        }
+        api_->setOption(zygisk::FORCE_DENYLIST_UNMOUNT);
+        if (!isGmsUnstable) {
+            return;
+        }
+        
+        int enabled = 0;
+        SpoofConfig spoofConfig{};
+        auto fd = api_->connectCompanion();
+        if (fd >= 0) [[likely]] {
+            // read enabled
+            xread(fd, &enabled, sizeof(enabled));
+            if (enabled) {
+                xread(fd, &spoofConfig, sizeof(spoofConfig));
+            }
+            close(fd);
+        }
+        if (enabled) {
+            LOGI("spoofing build vars in GMS!");
+            auto buildClass = env_->FindClass("android/os/Build");
+            auto buildVersionClass = env_->FindClass("android/os/Build$VERSION");
+
+            std::apply([this, &buildClass, &buildVersionClass](auto &&... args) {
+                ((!args.has_value ||
+                  (setField<typename std::remove_cvref_t<decltype(args)>::Type>(
+                          std::remove_cvref_t<decltype(args)>::isVersion() ? buildVersionClass
+                                                                           : buildClass,
+                          std::remove_cvref_t<decltype(args)>::getField(),
+                          args.value) &&
+                   (LOGI("%s set %s to %s",
+                         std::remove_cvref_t<decltype(args)>::isVersion() ? "VERSION" : "Build",
+                         std::remove_cvref_t<decltype(args)>::getField(),
+                         args.value.data()), true))
+                  ? void(0)
+                  : LOGE("%s failed to set %s to %s",
+                         std::remove_cvref_t<decltype(args)>::isVersion() ? "VERSION" : "Build",
+                         std::remove_cvref_t<decltype(args)>::getField(),
+                         args.value.data())), ...);
+            }, spoofConfig);
+        }
     }
 
     void preServerSpecialize(ServerSpecializeArgs *args) override {
