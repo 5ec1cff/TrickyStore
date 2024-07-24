@@ -50,17 +50,17 @@ Here is an example of a spoof config:
 
 ```
 MANUFACTURER=Google
-MODEL=Pixel
-FINGERPRINT=google/sailfish/sailfish:8.1.0/OPM1.171019.011/4448085:user/release-keys
+MODEL=Pixel 8 Pro
+FINGERPRINT=google/husky_beta/husky:15/AP31.240617.009/12094726:user/release-keys
 BRAND=google
-PRODUCT=sailfish
-DEVICE=sailfish
-RELEASE=8.1.0
-ID=OPM1.171019.011
-INCREMENTAL=4448085
+PRODUCT=husky_beta
+DEVICE=husky
+RELEASE=15
+ID=AP31.240617.009
+INCREMENTAL=12094726
 TYPE=user
 TAGS=release-keys
-SECURITY_PATCH=2017-12-05
+SECURITY_PATCH=2024-07-05
 ```
 
 ## Support TEE broken devices
