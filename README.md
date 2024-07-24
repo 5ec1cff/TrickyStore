@@ -42,11 +42,11 @@ format:
 
 > **Zygisk (or Zygisk Next) is needed for this feature to work.**
 
-If you still do not pass you can try enabling Build variable spoofing by creating the file `/data/adb/tricky_store/spoof_build_vars`.
+If you still do not pass you can try enabling/disabling Build variable spoofing by creating/deleting the file `/data/adb/tricky_store/spoof_build_vars`.
 
-Tricky Store will automatically generate example config props inside `/data/adb/tricky_store/spoof_build_vars` on next reboot, then you can manually edit your spoof config.
+Tricky Store will automatically generate example config props inside `/data/adb/tricky_store/spoof_build_vars` once created, on next reboot, then you may manually edit your spoof config.
 
-Here is an example of spoof config:
+Here is an example of a spoof config:
 
 ```
 MANUFACTURER=Google
