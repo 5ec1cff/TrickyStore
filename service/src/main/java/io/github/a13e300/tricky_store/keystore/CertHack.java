@@ -90,6 +90,7 @@ public final class CertHack {
             throw new RuntimeException(t);
         }
     }
+
     private static final int ATTESTATION_PACKAGE_INFO_VERSION_INDEX = 1;
 
     public static boolean canHack() {
@@ -137,7 +138,7 @@ public final class CertHack {
                 LinkedList<Certificate> certificateChain = new LinkedList<>();
 
                 for (int j = 0; j < numberOfCertificates; j++) {
-                    Map<String,String> certData= xmlParser.obtainPath(
+                    Map<String, String> certData = xmlParser.obtainPath(
                             "AndroidAttestation.Keybox.Key[" + i + "].CertificateChain.Certificate[" + j + "]");
                     certificateChain.add(parseCert(certData.get("text")));
                 }
@@ -186,7 +187,8 @@ public final class CertHack {
             ContentSigner signer;
 
             var k = keyboxes.get(leaf.getPublicKey().getAlgorithm());
-            if (k == null) throw new UnsupportedOperationException("unsupported algorithm " + leaf.getPublicKey().getAlgorithm());
+            if (k == null)
+                throw new UnsupportedOperationException("unsupported algorithm " + leaf.getPublicKey().getAlgorithm());
             certificates = new LinkedList<>(k.certificates);
             builder = new X509v3CertificateBuilder(
                     new X509CertificateHolder(
@@ -355,7 +357,6 @@ public final class CertHack {
             var AosVersion = new ASN1Integer(UtilKt.getOsVersion());
             var AosPatchLevel = new ASN1Integer(UtilKt.getPatchLevel());
 
-            // TODO hex3l: add applicationID to attestation
             var AapplicationID = createApplicationId(uid);
             var AbootPatchlevel = new ASN1Integer(UtilKt.getPatchLevelLong());
             var AvendorPatchLevel = new ASN1Integer(UtilKt.getPatchLevelLong());
@@ -378,8 +379,29 @@ public final class CertHack {
             var vendorPatchLevel = new DERTaggedObject(true, 718, AvendorPatchLevel);
             var bootPatchLevel = new DERTaggedObject(true, 719, AbootPatchlevel);
 
-            ASN1Encodable[] teeEnforcedEncodables = {purpose, algorithm, keySize, digest, ecCurve,
-                    noAuthRequired, origin, rootOfTrust, osVersion, osPatchLevel, vendorPatchLevel, bootPatchLevel};
+            ASN1Encodable[] teeEnforcedEncodables;
+
+            // Support device properties attestation
+            if (params.brand != null) {
+                var Abrand = new DEROctetString(params.brand);
+                var Adevice = new DEROctetString(params.device);
+                var Aproduct = new DEROctetString(params.product);
+                var Amanufacturer = new DEROctetString(params.manufacturer);
+                var Amodel = new DEROctetString(params.model);
+                var brand = new DERTaggedObject(true, 710, Abrand);
+                var device = new DERTaggedObject(true, 711, Adevice);
+                var product = new DERTaggedObject(true, 712, Aproduct);
+                var manufacturer = new DERTaggedObject(true, 716, Amanufacturer);
+                var model = new DERTaggedObject(true, 717, Amodel);
+
+                teeEnforcedEncodables = new ASN1Encodable[]{purpose, algorithm, keySize, digest, ecCurve,
+                        noAuthRequired, origin, rootOfTrust, osVersion, osPatchLevel, vendorPatchLevel,
+                        bootPatchLevel, brand, device, product, manufacturer, model};
+            } else {
+                teeEnforcedEncodables = new ASN1Encodable[]{purpose, algorithm, keySize, digest, ecCurve,
+                        noAuthRequired, origin, rootOfTrust, osVersion, osPatchLevel, vendorPatchLevel,
+                        bootPatchLevel};
+            }
 
             ASN1Encodable[] softwareEnforced = {applicationID, creationDateTime};
 
@@ -482,6 +504,11 @@ public final class CertHack {
         public List<Integer> digest = new ArrayList<>();
 
         public byte[] attestationChallenge;
+        public byte[] brand;
+        public byte[] device;
+        public byte[] product;
+        public byte[] manufacturer;
+        public byte[] model;
 
         public KeyGenParameters(KeyParameter[] params) {
             for (var kp : params) {
@@ -508,6 +535,11 @@ public final class CertHack {
                         digest.add(p.getDigest());
                     }
                     case Tag.ATTESTATION_CHALLENGE -> attestationChallenge = p.getBlob();
+                    case Tag.ATTESTATION_ID_BRAND -> brand = p.getBlob();
+                    case Tag.ATTESTATION_ID_DEVICE -> device = p.getBlob();
+                    case Tag.ATTESTATION_ID_PRODUCT -> product = p.getBlob();
+                    case Tag.ATTESTATION_ID_MANUFACTURER -> manufacturer = p.getBlob();
+                    case Tag.ATTESTATION_ID_MODEL -> model = p.getBlob();
                 }
             }
         }
