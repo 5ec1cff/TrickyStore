@@ -257,16 +257,16 @@ static void companion_handler(int fd) {
     constexpr auto kDefaultSpoofConfig =
 R"EOF(MANUFACTURER=Google
 MODEL=Pixel
-FINGERPRINT=google/sailfish/sailfish:8.1.0/OPM1.171019.011/4448085:user/release-keys
+FINGERPRINT=google/sailfish/sailfish:10/QPP3.190404.015/5505587:user/release-keys
 BRAND=google
 PRODUCT=sailfish
 DEVICE=sailfish
-RELEASE=8.1.0
-ID=OPM1.171019.011
-INCREMENTAL=4448085
+RELEASE=10
+ID=QPP3.190404.015
+INCREMENTAL=5505587
 TYPE=user
 TAGS=release-keys
-SECURITY_PATCH=2017-12-05
+SECURITY_PATCH=2019-05-05
 )EOF"sv;
     struct stat st{};
     int enabled = stat(kSpoofConfigFile.data(), &st) == 0;
