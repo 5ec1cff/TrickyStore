@@ -2,7 +2,6 @@ package io.github.a13e300.tricky_store
 
 import android.hardware.security.keymint.KeyParameter
 import android.hardware.security.keymint.KeyParameterValue
-import android.hardware.security.keymint.SecurityLevel
 import android.hardware.security.keymint.Tag
 import android.os.IBinder
 import android.os.Parcel
@@ -19,7 +18,10 @@ import java.security.KeyPair
 import java.security.cert.Certificate
 import java.util.concurrent.ConcurrentHashMap
 
-class SecurityLevelInterceptor(private val original: IKeystoreSecurityLevel) : BinderInterceptor() {
+class SecurityLevelInterceptor(
+    private val original: IKeystoreSecurityLevel,
+    private val level: Int
+) : BinderInterceptor() {
     companion object {
         private val generateKeyTransaction =
             getTransactCode(IKeystoreSecurityLevel.Stub::class.java, "generateKey")
@@ -79,6 +81,7 @@ class SecurityLevelInterceptor(private val original: IKeystoreSecurityLevel) : B
     ): KeyEntryResponse {
         val response = KeyEntryResponse()
         val metadata = KeyMetadata()
+        metadata.keySecurityLevel = level
         Utils.putCertificateChain(metadata, chain.toTypedArray<Certificate>())
         val d = KeyDescriptor()
         d.domain = descriptor.domain
@@ -91,7 +94,7 @@ class SecurityLevelInterceptor(private val original: IKeystoreSecurityLevel) : B
             a.keyParameter = KeyParameter()
             a.keyParameter.tag = Tag.PURPOSE
             a.keyParameter.value = KeyParameterValue.keyPurpose(i)
-            a.securityLevel = SecurityLevel.TRUSTED_ENVIRONMENT
+            a.securityLevel = level
             authorizations.add(a)
         }
         for (i in params.digest) {
@@ -99,32 +102,32 @@ class SecurityLevelInterceptor(private val original: IKeystoreSecurityLevel) : B
             a.keyParameter = KeyParameter()
             a.keyParameter.tag = Tag.DIGEST
             a.keyParameter.value = KeyParameterValue.digest(i)
-            a.securityLevel = SecurityLevel.TRUSTED_ENVIRONMENT
+            a.securityLevel = level
             authorizations.add(a)
         }
         a = Authorization()
         a.keyParameter = KeyParameter()
         a.keyParameter.tag = Tag.ALGORITHM
         a.keyParameter.value = KeyParameterValue.algorithm(params.algorithm)
-        a.securityLevel = SecurityLevel.TRUSTED_ENVIRONMENT
+        a.securityLevel = level
         authorizations.add(a)
         a = Authorization()
         a.keyParameter = KeyParameter()
         a.keyParameter.tag = Tag.KEY_SIZE
         a.keyParameter.value = KeyParameterValue.integer(params.keySize)
-        a.securityLevel = SecurityLevel.TRUSTED_ENVIRONMENT
+        a.securityLevel = level
         authorizations.add(a)
         a = Authorization()
         a.keyParameter = KeyParameter()
         a.keyParameter.tag = Tag.EC_CURVE
         a.keyParameter.value = KeyParameterValue.ecCurve(params.ecCurve)
-        a.securityLevel = SecurityLevel.TRUSTED_ENVIRONMENT
+        a.securityLevel = level
         authorizations.add(a)
         a = Authorization()
         a.keyParameter = KeyParameter()
         a.keyParameter.tag = Tag.NO_AUTH_REQUIRED
         a.keyParameter.value = KeyParameterValue.boolValue(true) // TODO: copy
-        a.securityLevel = SecurityLevel.TRUSTED_ENVIRONMENT
+        a.securityLevel = level
         authorizations.add(a)
         // TODO: ORIGIN
         //OS_VERSION

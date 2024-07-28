@@ -133,7 +133,7 @@ object KeystoreInterceptor : BinderInterceptor() {
         keystore.linkToDeath(Killer, 0)
         if (tee != null) {
             Logger.i("register for TEE SecurityLevel $tee!")
-            val interceptor = SecurityLevelInterceptor(tee)
+            val interceptor = SecurityLevelInterceptor(tee, SecurityLevel.TRUSTED_ENVIRONMENT)
             registerBinderInterceptor(bd, tee.asBinder(), interceptor)
             teeInterceptor = interceptor
         } else {
@@ -141,7 +141,7 @@ object KeystoreInterceptor : BinderInterceptor() {
         }
         if (strongBox != null) {
             Logger.i("register for StrongBox SecurityLevel $tee!")
-            val interceptor = SecurityLevelInterceptor(strongBox)
+            val interceptor = SecurityLevelInterceptor(strongBox, SecurityLevel.STRONGBOX)
             registerBinderInterceptor(bd, strongBox.asBinder(), interceptor)
             strongBoxInterceptor = interceptor
         } else {
