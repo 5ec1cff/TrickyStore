@@ -9,6 +9,8 @@ A trick of keystore. **Android 12 or above is required**.
 3. Customize target packages at `/data/adb/tricky_store/target.txt` (Optional).  
 4. Enjoy!  
 
+**All configuration files will take effect immediately.**
+
 ## keybox.xml
 
 format:
@@ -63,6 +65,9 @@ TAGS=release-keys
 SECURITY_PATCH=2024-07-05
 ```
 
+For Magisk users: if you don't need this feature and zygisk is disabled, please remove or rename the
+folder `/data/adb/modules/tricky_store/zygisk` manually.
+
 ## Support TEE broken devices
 
 Tricky Store will hack the leaf certificate by default. On TEE broken devices, this will not work because we can't retrieve the leaf certificate from TEE. You can add a `!` after a package name to enable generate certificate support for this package.
@@ -77,10 +82,13 @@ io.github.vvb2060.keyattestation
 com.google.android.gms!
 ```
 
-## Known issues
+## TODO
 
-- App Attest Key is not supported.
-- StrongBox is not supported.
+- Support App Attest Key.
+- [Support Android 11 and below.](https://github.com/5ec1cff/TrickyStore/issues/25#issuecomment-2250588463)
+- Support automatic selection mode.
+
+PR is welcomed.
 
 ## Acknowledgement
 
