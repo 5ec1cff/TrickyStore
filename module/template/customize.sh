@@ -105,3 +105,7 @@ if [ ! -f "$CONFIG_DIR/target.txt" ]; then
   extract "$ZIPFILE" 'target.txt' "$TMPDIR"
   mv "$TMPDIR/target.txt" "$CONFIG_DIR/target.txt"
 fi
+
+# gms service kill
+su -c killall com.google.android.gms
+su -c killall com.google.android.gms.unstable
