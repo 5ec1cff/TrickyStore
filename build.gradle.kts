@@ -1,8 +1,6 @@
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.LibraryExtension
-import org.jetbrains.kotlin.daemon.common.toHexString
 import java.io.ByteArrayOutputStream
-import java.security.MessageDigest
 
 plugins {
     alias(libs.plugins.agp.app) apply false
@@ -32,18 +30,6 @@ val verName by extra("v1.0.3")
 val verCode by extra(gitCommitCount)
 val commitHash by extra(gitCommitHash)
 val abiList by extra(listOf("arm64-v8a", "x86_64"))
-
-fun calculateChecksum(): String {
-    return MessageDigest.getInstance("SHA-256").run {
-        update(moduleId.toByteArray(Charsets.UTF_8))
-        update(moduleName.toByteArray(Charsets.UTF_8))
-        update(verName.toByteArray(Charsets.UTF_8))
-        update(verCode.toString().toByteArray(Charsets.UTF_8))
-        update(author.toByteArray(Charsets.UTF_8))
-        update(description.toByteArray(Charsets.UTF_8))
-        digest().toHexString()
-    }
-}
 
 val androidMinSdkVersion by extra(31)
 val androidTargetSdkVersion by extra(34)

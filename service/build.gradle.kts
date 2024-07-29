@@ -84,8 +84,8 @@ dependencies {
     implementation(libs.bcpkix.jdk18on)
 }
 
-androidComponents.onVariants { variant ->
-    afterEvaluate {
+afterEvaluate {
+    android.applicationVariants.forEach { variant ->
         val variantLowered = variant.name.lowercase()
         val variantCapped = variant.name.capitalizeUS()
         val pushTask = task<Task>("pushService$variantCapped") {

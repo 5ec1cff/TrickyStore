@@ -60,11 +60,14 @@ dependencies {
     implementation(libs.cxx)
 }
 
-androidComponents.onVariants { variant ->
-    afterEvaluate {
+evaluationDependsOn(":service")
+
+afterEvaluate {
+    android.applicationVariants.forEach { variant ->
         val variantLowered = variant.name.lowercase()
         val variantCapped = variant.name.capitalizeUS()
-        val buildTypeLowered = variant.buildType?.lowercase()
+        val buildTypeCapped = variant.buildType.name.replaceFirstChar { it.uppercase() }
+        val buildTypeLowered = variant.buildType.name.lowercase()
         val supportedAbis = abiList.map {
             when (it) {
                 "arm64-v8a" -> "arm64"
@@ -81,7 +84,10 @@ androidComponents.onVariants { variant ->
 
         val prepareModuleFilesTask = task<Sync>("prepareModuleFiles$variantCapped") {
             group = "module"
-            dependsOn("assemble$variantCapped", ":service:assemble$variantCapped")
+            dependsOn(
+                "assemble$variantCapped",
+                ":service:package$buildTypeCapped"
+            )
             into(moduleDir)
             from(rootProject.layout.projectDirectory.file("README.md"))
             from(layout.projectDirectory.file("template")) {
@@ -110,8 +116,9 @@ androidComponents.onVariants { variant ->
                 filter<ReplaceTokens>("tokens" to tokens)
                 filter<FixCrLfFilter>("eol" to FixCrLfFilter.CrLf.newInstance("lf"))
             }
-            from(project(":service").layout.buildDirectory.file("outputs/apk/$variantLowered/service-$variantLowered.apk")) {
-                rename { "service.apk" }
+            from(project(":service").tasks.getByName("package$buildTypeCapped").outputs) {
+                include("*.apk")
+                rename(".*\\.apk", "service.apk")
             }
             from(layout.buildDirectory.file("intermediates/stripped_native_libs/$variantLowered/strip${variantCapped}DebugSymbols/out/lib")) {
                 exclude("**/libbinder.so", "**/libutils.so")
