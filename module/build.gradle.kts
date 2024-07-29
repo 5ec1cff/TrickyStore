@@ -15,6 +15,9 @@ val verName: String by rootProject.extra
 val commitHash: String by rootProject.extra
 val abiList: List<String> by rootProject.extra
 val androidMinSdkVersion: Int by rootProject.extra
+val author: String by rootProject.extra
+val description: String by rootProject.extra
+val moduleDescription = description
 
 android {
     defaultConfig {
@@ -91,7 +94,9 @@ androidComponents.onVariants { variant ->
                     "moduleId" to moduleId,
                     "moduleName" to moduleName,
                     "versionName" to "$verName ($verCode-$commitHash-$variantLowered)",
-                    "versionCode" to verCode
+                    "versionCode" to verCode,
+                    "author" to author,
+                    "description" to moduleDescription,
                 )
             }
             from(layout.projectDirectory.file("template")) {
