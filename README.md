@@ -65,9 +65,6 @@ TAGS=release-keys
 SECURITY_PATCH=2024-07-05
 ```
 
-For Magisk users: if you don't need this feature and zygisk is disabled, please remove or rename the
-folder `/data/adb/modules/tricky_store/zygisk` manually.
-
 ## Support TEE broken devices
 
 Tricky Store will hack the leaf certificate by default. On TEE broken devices, this will not work because we can't retrieve the leaf certificate from TEE. You can add a `!` after a package name to enable generate certificate support for this package.
