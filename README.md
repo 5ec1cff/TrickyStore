@@ -1,6 +1,8 @@
 # Tricky Store
 
-A trick of keystore. **Android 12 or above is required**.
+A trick of keystore. **Android 12 or above is required**
+
+Shamiko (or similar) is also required for the global props changes and root hiding it provides.
 
 ## Usage
 
