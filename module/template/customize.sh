@@ -90,18 +90,37 @@ mv "$MODPATH/libinject.so" "$MODPATH/inject"
 chmod 755 "$MODPATH/inject"
 
 CONFIG_DIR=/data/adb/tricky_store
+
+backup_file() {
+  local file=$1
+  if [ -f "$file" ]; then
+    mv "$file" "${file}.bak"
+  fi
+}
 if [ ! -d "$CONFIG_DIR" ]; then
   ui_print "- Creating configuration directory"
   mkdir -p "$CONFIG_DIR"
-  [ ! -f "$CONFIG_DIR/spoof_build_vars" ] && touch "$CONFIG_DIR/spoof_build_vars"
 fi
+
+backup_file "$CONFIG_DIR/spoof_build_vars"
+touch "$CONFIG_DIR/spoof_build_vars"
+
 if [ ! -f "$CONFIG_DIR/keybox.xml" ]; then
   ui_print "- Adding default software keybox"
   extract "$ZIPFILE" 'keybox.xml' "$TMPDIR"
   mv "$TMPDIR/keybox.xml" "$CONFIG_DIR/keybox.xml"
+else
+  backup_file "$CONFIG_DIR/keybox.xml"
+  extract "$ZIPFILE" 'keybox.xml' "$TMPDIR"
+  mv "$TMPDIR/keybox.xml" "$CONFIG_DIR/keybox.xml"
 fi
+
 if [ ! -f "$CONFIG_DIR/target.txt" ]; then
   ui_print "- Adding default target scope"
+  extract "$ZIPFILE" 'target.txt' "$TMPDIR"
+  mv "$TMPDIR/target.txt" "$CONFIG_DIR/target.txt"
+else
+  backup_file "$CONFIG_DIR/target.txt"
   extract "$ZIPFILE" 'target.txt' "$TMPDIR"
   mv "$TMPDIR/target.txt" "$CONFIG_DIR/target.txt"
 fi
