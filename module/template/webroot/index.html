@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebUI</title>
+</head>
+<body>
+    <div id="mask" style="width: 100%;height: 100%;opacity: 0.5;position: absolute;background-color: gray;" hidden></div>
+    <h2 class="text_center">Tricky Store</h2>
+    <div style="display: flex;flex-direction: column;">
+        <span id="keystoreState" class="text_center">Loading</span>
+        <br>
+        <span id="varsSpoofingState" class="text_center">Loading</span>
+        <br>
+        <span>
+            目标应用列表:
+            <span style="color: green;">绿色表示已启用密钥生成</span>
+            <button type="button" onclick="document.getElementById('addPackageDialog').show()" style="width: 18%;">添加应用</button>
+            <!-- real5ec1cff_discuss 有人希望出这个功能 反正挺简单的 而且后面可能确实有不少人要-->
+            <button onclick="document.getElementById('addAllAppsDialog').show()">⁘</button>
+        </span>
+        <!-- 目标应用列表 -->
+        <div id="targetList">
+        </div>
+        <!-- 添加应用 -->
+        <dialog id="addPackageDialog" style="border-radius: 5px;margin-top: 78%;">
+            <span>输入目标应用包名</span>
+            <br>
+            <input type="text" id="packageNameInput" style="width: 100%;" placeholder="包名不是应用名" onkeyup="value=value.replace(/[\u4e00-\u9fa5]/ig,'')"></input>
+            <br>
+            <button style="margin-top: 5px;" onclick="document.getElementById('packageNameInput').value='';this.parentNode.close()">取消</button>
+            <button id="addPackageDialogConfirmButton" style="float: right;margin-top: 5px;">添加</button>
+        </dialog>
+        <!-- 添加全部应用 -->
+        <dialog id="addAllAppsDialog">
+            <h3 style="text-align: center;">添加所有用户应用</h3>
+            <span>
+                我可能懒得一个个加软件了
+                <br>
+                但真不咋建议这样 有些软件是完全没必要甚至不应该加进作用域的
+                <br>
+                不然就不会让你手动按需加包名了
+                <br>
+                当然你真想这样...好吧
+                <br>
+                (不会添加系统软件)
+            </span>
+            <br>
+            <small style="text-align: center;color: gray;">滑动滑块确认添加</small><br>
+            <!-- TWRP 但懒 -->
+            <input type="range" min="0" max="100" value="0" id="addAllAppsConfirmSlider" style="width: 95%;"></input>
+            <br>
+            <br>
+            <button onclick="this.parentNode.close()">取消</button>
+        </dialog>
+    </div>
+</body>
+<script type="module" src="main.js"></script>
+<style>
+    *{
+        user-select: none;
+    }
+    .text_center{
+        text-align: center;
+    }
+</style>
+</html>
