@@ -15,7 +15,7 @@
         <br>
         <span>
             目标应用列表:
-            <span style="color: green;">绿色表示已启用密钥生成</span>
+            <span style="color: green;">绿色表示已启用证书生成</span>
             <button type="button" onclick="document.getElementById('addPackageDialog').show()" style="width: 18%;">添加应用</button>
             <!-- real5ec1cff_discuss 有人希望出这个功能 反正挺简单的 而且后面可能确实有不少人要-->
             <button onclick="document.getElementById('addAllAppsDialog').show()">⁘</button>
@@ -28,6 +28,8 @@
             <span>输入目标应用包名</span>
             <br>
             <input type="text" id="packageNameInput" style="width: 100%;" placeholder="包名不是应用名" onkeyup="value=value.replace(/[\u4e00-\u9fa5]/ig,'')"></input>
+            <br>
+            <input type="checkbox" id="generateCertificateCheckbox">启用证书生成(应对TEE损坏)
             <br>
             <button style="margin-top: 5px;" onclick="document.getElementById('packageNameInput').value='';this.parentNode.close()">取消</button>
             <button id="addPackageDialogConfirmButton" style="float: right;margin-top: 5px;">添加</button>

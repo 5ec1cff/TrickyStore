@@ -1,10 +1,9 @@
 import * as ksu from "./ksu.js";
 //环境检测
-if (window.ksu == null) {
-    document.body.innerHTML = '<h1 style="text-align:center;">Only can working in KernelSU</h1>';
-    throw new ReferenceError("Only can working in KernelSU")
-    // return
-}
+// if (window.ksu == null) {
+//     document.body.innerHTML = '<h1 style="text-align:center;">Only can working in KernelSU</h1>';
+//     throw new ReferenceError("Only can working in KernelSU")
+// }
 /**
  * @type {Set<string>}
  */
@@ -55,6 +54,7 @@ window.addEventListener("load", (event) => {
         const fragment = document.createDocumentFragment();
         //构建列表
         for (const pkgName of targetsSet) {
+            if (pkgName === "") continue;
             fragment.appendChild(createAppListItem(pkgName));
         };
         document.getElementById("targetList").appendChild(fragment);
@@ -67,9 +67,10 @@ window.addEventListener("load", (event) => {
             ksu.toast("无效包名");
             return
         }
-        await addTargetPackage(input.value);
+        //启用生成证书时可以收到带'!'的新内容 避免下次加载才显示绿色包名
+        const newPkgName=await addTargetPackage(input.value);
         //追加元素
-        document.getElementById("targetList").appendChild(createAppListItem(input.value));
+        document.getElementById("targetList").appendChild(createAppListItem(newPkgName));
         //清空输入 关闭对话框
         document.getElementById('packageNameInput').value = '';
         document.getElementById('addPackageDialog').close();
@@ -95,6 +96,10 @@ async function addTargetPackage(pkg) {
     //阻止操作
     maskVisibility(true);
     //防止重复
+    if (document.getElementById("generateCertificateCheckbox").checked) {
+        pkg+="!";
+        //不复位了 基本上一次要以后都要
+    }
     targetsSet.add(pkg);
     let tempFile = new String();
     for (const name of targetsSet) {
@@ -102,6 +107,7 @@ async function addTargetPackage(pkg) {
     }
     await writeTargetFile(tempFile);
     maskVisibility(false);
+    return pkg
 }
 async function removeTargetPackage(pkg) {
     maskVisibility(true);
