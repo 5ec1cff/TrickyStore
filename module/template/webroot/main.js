@@ -1,7 +1,6 @@
 import * as ksu from "./ksu.js";
-//环境
-const debug = true;
-if (!debug && window.ksu == null) {
+//环境检测
+if (window.ksu == null) {
     document.body.innerHTML = '<h1 style="text-align:center;">Only can working in KernelSU</h1>';
     throw new ReferenceError("Only can working in KernelSU")
     // return
@@ -157,7 +156,7 @@ function createAppListItem(pkgName) {
  * @param {string} data 
  */
 async function writeTargetFile(data) {
-    await ksu.exec(`echo "${data}" > /storage/emulated/0/target.txt`);
+    await ksu.exec(`echo "${data}" > /data/adb/tricky_store/target.txt`);
 }
 async function addAllApps() {
     if (addingAllPackages) return
