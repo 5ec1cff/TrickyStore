@@ -161,6 +161,8 @@ public final class CertHack {
     public static Certificate[] hackCertificateChain(Certificate[] caList) {
         if (caList == null) throw new UnsupportedOperationException("caList is null!");
         try {
+            if (Utils.isSAK(caList)) return caList;
+
             X509Certificate leaf = (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(caList[0].getEncoded()));
             byte[] bytes = leaf.getExtensionValue(OID.getId());
             if (bytes == null) return caList;
