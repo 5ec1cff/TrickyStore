@@ -82,6 +82,17 @@ io.github.vvb2060.keyattestation
 com.google.android.gms!
 ```
 
+## Verdicts
+
+With this module, you should obtain:
+
+```
+MEETS_BASIC_INTEGRITY ✅
+MEETS_DEVICE_INTEGRITY ✅
+MEETS_STRONG_INTEGRITY ✅ (with a valid keybox)
+MEETS_VIRTUAL_INTEGRITY 🚫 (this is for emulators only)
+```
+
 ## TODO
 
 - Support App Attest Key.
