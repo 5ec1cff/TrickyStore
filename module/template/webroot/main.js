@@ -46,14 +46,16 @@ window.addEventListener("load", async (event) => {
     const hasAppListCache= await ksu.exec("test -e /data/adb/modules/tricky_store/webroot/cache/appList");
     //遮罩
     if (hasAppListCache.errno !== 0) {
+        // 设置aapt权限
+        await ksu.exec(`chmod 555 ${util.webDir}/lib/aapt`);
         await createAppListCache();
     }
     mask.innerText="正在读取应用列表"
     appListMap=await util.readCache();
     if (appListMap===null) {
         //读取失败
-        mask.innerText="读取列表失败 将清除缓存 请重试"
-        await ksu.exec("rm -f /data/adb/modules/tricky_store/webroot/cache/appList");
+        mask.innerText="读取列表失败 将自动清除缓存 请重试"
+        clearCache();
         return
     }
     //隐藏并清空
@@ -115,7 +117,12 @@ window.addEventListener("load", async (event) => {
     document.getElementById("addPackageButton").addEventListener("click",async ()=>{
         document.getElementById("addPackageAppSelectDialog").show();
         if(!appSelectListCreated) createAppSelectList();
-    })
+    });
+    document.getElementById("clearCacheButton").addEventListener("click", async () => {
+        document.getElementById("clearCacheDialog").close();
+        maskVisibility(true);
+        clearCache();
+    });
 })
 /**
  * @description 添加目标包
@@ -123,6 +130,7 @@ window.addEventListener("load", async (event) => {
  * @param {boolean|null} enableGenerateCertificate
  */
 async function addTargetPackage(pkg,enableGenerateCertificate) {
+    // 检查重复 有些加了"!"的一起查
     if(targetsSet.has(pkg) || targetsSet.has(pkg+"!")) {
         ksu.toast("已添加过该应用");
         return
@@ -132,7 +140,7 @@ async function addTargetPackage(pkg,enableGenerateCertificate) {
     //防止重复
     if (enableGenerateCertificate??document.getElementById("generateCertificateCheckbox").checked) {
         pkg+="!";
-        //不复位了 基本上一次要以后都要
+        //不复位了 基本上下一次也要
     }
     targetsSet.add(pkg);
     let tempFile = new String();
@@ -143,6 +151,10 @@ async function addTargetPackage(pkg,enableGenerateCertificate) {
     maskVisibility(false);
     return pkg
 }
+/**
+ * @description 移除目标包
+ * @param {string} pkg 目标包名 
+ */
 async function removeTargetPackage(pkg) {
     maskVisibility(true);
     targetsSet.delete(pkg);
@@ -171,7 +183,7 @@ function createAppListItem(pkgName) {
     item.style.marginTop = "10px"
     //包名
     const tablePackageName = document.createElement("span");
-    console.log(appListMap.get(pkgName.replace("!", "")));
+    //显示
     tablePackageName.innerText = appListMap.get(pkgName.replace("!", "")) ?? pkgName;
     //证书生成启用检测
     if (pkgName.endsWith("!")) {
@@ -200,6 +212,9 @@ function createAppListItem(pkgName) {
 async function writeTargetFile(data) {
     await ksu.exec(`echo "${data}" > /data/adb/tricky_store/target.txt`);
 }
+/**
+ * @description 添加所有用户应用
+ */
 async function addAllApps() {
     if (addingAllPackages) return
     addingAllPackages = true;
@@ -216,7 +231,7 @@ async function addAllApps() {
         tmp += `${pkg}\n`
     }
     await writeTargetFile(tmp);
-    //修改列表元素
+    //清空列表元素
     document.getElementById("targetList").innerHTML = "";
     const fragment = document.createDocumentFragment();
     //构建列表
@@ -228,7 +243,11 @@ async function addAllApps() {
     ksu.toast("成功添加全部用户应用");
     addingAllPackages=false;
 }
+/**
+ * @description 创建应用选择列表
+ */
 async function createAppSelectList(){
+    // 标记 修复内容重复
     appSelectListCreated=true;
     const fragment=document.createDocumentFragment();
     /* 系统应用一般没必要加
@@ -242,6 +261,7 @@ async function createAppSelectList(){
     const listArray = allUserAppsList.stdout.replaceAll("package:", "").split("\n");
     listArray.forEach((pkgName)=>{
         const listElement=document.createElement("div");
+        // 不然根本点不准
         listElement.style.marginTop="5px";
         listElement.style.marginBottom="5px";
         listElement.innerText=appListMap.get(pkgName) || pkgName;
@@ -259,6 +279,19 @@ async function createAppSelectList(){
     })
     document.getElementById("addPackageSelect").appendChild(fragment);
 }
+/**
+ * @description 创建列表缓存
+ */
 async function createAppListCache(){
     await ksu.exec(`sh ${util.webDir}/shell/init.sh`);
+}
+/**
+ * @description 清理缓存并在3.5秒后刷新
+ */
+async function clearCache() {
+    await ksu.exec("rm -f /data/adb/modules/tricky_store/webroot/cache/appList");
+    ksu.toast("缓存清理成功");
+    setTimeout(() => {
+        location.reload();
+    }, 3500);
 }

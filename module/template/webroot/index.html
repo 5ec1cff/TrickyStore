@@ -6,12 +6,15 @@
     <title>WebUI</title>
 </head>
 <body>
-    <!-- 遮罩 -->
+    <!-- 遮罩 加载等用 -->
     <div id="mask" style="width: 100%;height: 100%;opacity: 0.5;position: absolute;background-color: gray;text-align: center;padding-top: 50%;">
         正在创建并加载应用列表缓存
         这会需要一些时间
     </div>
     <h2 class="text_center">Tricky Store</h2>
+    <!-- 缓存清理 -->
+    <button type="button" style="position: absolute; left: 3%;background-color: transparent;border-radius: 8px;border-width: 1px;width: 32px;height: 32px;top: 3%;" onclick="document.getElementById('clearCacheDialog').show()">C</button>
+    <!-- 关于 -->
     <button type="button" style="position: absolute; right: 3%;background-color: transparent;border-radius: 8px;border-width: 1px;width: 32px;height: 32px;top: 3%;" onclick="document.getElementById('aboutDialog').show()">i</button>
     <div style="display: flex;flex-direction: column;">
         <span id="keystoreState" class="text_center">Loading</span>
@@ -28,7 +31,7 @@
         <!-- 目标应用列表 -->
         <div id="targetList">
         </div>
-        <!-- 添加应用 -->
+        <!-- 输入包名添加应用 -->
         <dialog id="addPackageDialog" style="border-radius: 5px;margin-top: 78%;">
             <span>输入目标应用包名</span>
             <br>
@@ -56,31 +59,38 @@
             </span>
             <br>
             <small style="text-align: center;color: gray;">滑动滑块确认添加</small><br>
-            <!-- TWRP 但懒 -->
+            <!-- 仿TWRP 但懒 -->
             <input type="range" min="0" max="100" value="0" id="addAllAppsConfirmSlider" style="width: 95%;"></input>
             <br>
             <br>
             <button onclick="this.parentNode.close()" class="baseButton">取消</button>
         </dialog>
+        <!-- 应用选择列表 -->
         <dialog id="addPackageAppSelectDialog" style="border-radius: 5px;margin-top: 15%; height: 70%;width: 75%;">
-            <button onclick="this.parentNode.close()" style="float: right;" class="noBgButton">X</button>
+            <button onclick="this.parentNode.close()" style="position: absolute; right: 6%;" class="noBgButton">X</button>
             <h3 style="text-align: center;">选择应用</h3>
             <div>
             </div><br>
             <span style="color: gray;">要添加系统软件 请手动
                 <a style="text-decoration: none; color: cornflowerblue;" href="javascript:document.getElementById('addPackageAppSelectDialog').close();document.getElementById('addPackageDialog').show()">输入包名</a>
-                <!-- <button class="baseButton" onclick="this.parentNode.parentNode.close();document.getElementById('addPackageDialog').show()">输入包名</button> -->
             </span>
             <br>
             <input type="checkbox" id="generateCertificateCheckboxInSelectList"/>
             <label for="generateCertificateCheckboxInSelectList">启用证书生成(应对TEE损坏)</label>
             <br>
-            <div id="addPackageSelect" style="height: 81.7%;overflow: scroll;">
-                
-            </div>
+            <!-- 列表本身 -->
+            <div id="addPackageSelect" style="height: 81.7%;overflow: scroll;"></div>
         </dialog>
+        <!-- 清缓存弹窗 -->
+        <dialog id="clearCacheDialog" style="margin-top: 78%;">
+            <span class="text_center">清理应用列表缓存?</span>
+            <br>
+            <button style="margin-top: 5px;" onclick="this.parentNode.close()" class="baseButton">取消</button>
+            <button id="clearCacheButton" style="float: right;margin-top: 5px;" class="baseButton">清除</button>
+        </dialog>
+        <!-- 关于界面 -->
         <dialog id="aboutDialog" style="margin-top: 10%;">
-            <button onclick="this.parentNode.close()" style="float: right;" class="noBgButton">X</button>
+            <button onclick="this.parentNode.close()" style="right:5%;position: absolute;top: 3%;" class="noBgButton">X</button>
             <h3 class="text_center">Tricky Store</h3>
             <span class="text_center">A trick of keystore</span>
             <br>
@@ -119,17 +129,20 @@
 </body>
 <script type="module" src="main.js"></script>
 <style>
+    /* 禁止长按选择文本 */
     *{
         user-select: none;
     }
     .text_center{
         text-align: center;
     }
+    /* 常规按钮样式 */
     .baseButton{
         background-color: rgb(252, 250, 250);
         border: 1px solid rgb(0, 0, 0);
         border-radius: 5px;
     }
+    /* 无边框 */
     .noBgButton{
         background-color: transparent;
         border: 0px;

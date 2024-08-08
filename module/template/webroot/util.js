@@ -20,12 +20,14 @@ class aaptUtil {
          * @type {Map<string,string>}
          */
         const appMap=new Map();
+        //读取到的缓存列表文本
         const listArray=result.stdout.split("\n");
         for (const appData of listArray) {
             const pkgName=appData.slice(0,appData.indexOf(">"));
             let appName=appData.slice(appData.indexOf(">")+1);
             //防止纯空格 好像有这种情况
-            if(appName.replaceAll(" ","")==="") appName=pkgName
+            //好吧是误判 不过留着吧
+            // if(appName.replaceAll(" ","")==="") appName=pkgName
             appMap.set(pkgName,appName)
         }
         return appMap;
