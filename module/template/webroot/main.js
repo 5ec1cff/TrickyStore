@@ -1,4 +1,5 @@
 import * as ksu from "./ksu.js";
+import util from "./util.js";
 //环境检测
 // if (window.ksu == null) {
 //     document.body.innerHTML = '<h1 style="text-align:center;">Only can working in KernelSU</h1>';
@@ -10,8 +11,14 @@ import * as ksu from "./ksu.js";
 let targetsSet;
 //正在添加所有包
 let addingAllPackages = false;
-//笨办法
-window.addEventListener("load", (event) => {
+/**
+ * @description 应用列表和对应名称映射
+ * @type {Map<string,string>}
+ */
+let appListMap;
+//选择应用列表生成标记
+let appSelectListCreated=false;
+window.addEventListener("load", async (event) => {
     //文件存在检测
     //keybox.xml
     ksu.exec("test -e /data/adb/tricky_store/keybox.xml").then((result) => {
@@ -35,6 +42,23 @@ window.addEventListener("load", (event) => {
             spoofingElement.style.color = "coral";
         }
     });
+    //缓存文件检测
+    const hasAppListCache= await ksu.exec("test -e /data/adb/modules/tricky_store/webroot/cache/appList");
+    //遮罩
+    if (hasAppListCache.errno !== 0) {
+        await createAppListCache();
+    }
+    mask.innerText="正在读取应用列表"
+    appListMap=await util.readCache();
+    if (appListMap===null) {
+        //读取失败
+        mask.innerText="读取列表失败 将清除缓存 请重试"
+        await ksu.exec("rm -f /data/adb/modules/tricky_store/webroot/cache/appList");
+        return
+    }
+    //隐藏并清空
+    mask.hidden=true;
+    mask.innerText=""
     // target.txt检测及创建
     ksu.exec("test -e /data/adb/tricky_store/target.txt").then(async (result) => {
         if (result.errno !== 0) {
@@ -87,16 +111,26 @@ window.addEventListener("load", (event) => {
             addAllApps();
         }
     });
+    //加应用按钮
+    document.getElementById("addPackageButton").addEventListener("click",async ()=>{
+        document.getElementById("addPackageAppSelectDialog").show();
+        if(!appSelectListCreated) createAppSelectList();
+    })
 })
 /**
  * @description 添加目标包
  * @param {string} pkg 
+ * @param {boolean|null} enableGenerateCertificate
  */
-async function addTargetPackage(pkg) {
+async function addTargetPackage(pkg,enableGenerateCertificate) {
+    if(targetsSet.has(pkg) || targetsSet.has(pkg+"!")) {
+        ksu.toast("已添加过该应用");
+        return
+    }
     //阻止操作
     maskVisibility(true);
     //防止重复
-    if (document.getElementById("generateCertificateCheckbox").checked) {
+    if (enableGenerateCertificate??document.getElementById("generateCertificateCheckbox").checked) {
         pkg+="!";
         //不复位了 基本上一次要以后都要
     }
@@ -137,12 +171,13 @@ function createAppListItem(pkgName) {
     item.style.marginTop = "10px"
     //包名
     const tablePackageName = document.createElement("span");
-    tablePackageName.innerText = pkgName;
+    console.log(appListMap.get(pkgName.replace("!", "")));
+    tablePackageName.innerText = appListMap.get(pkgName.replace("!", "")) ?? pkgName;
     //证书生成启用检测
     if (pkgName.endsWith("!")) {
         tablePackageName.style.color = "green";
         //不让感叹号显示
-        tablePackageName.innerText = pkgName.replace("!", "");
+        tablePackageName.innerText = tablePackageName.innerText.replace("!", "");
     }
     //按钮
     const removeButton = document.createElement("button");
@@ -154,6 +189,7 @@ function createAppListItem(pkgName) {
     })
     removeButton.innerText = "移除";
     removeButton.style.float = "right";
+    removeButton.classList.add("baseButton")
     item.append(tablePackageName, removeButton);
     return item
 }
@@ -191,4 +227,38 @@ async function addAllApps() {
     maskVisibility(false);
     ksu.toast("成功添加全部用户应用");
     addingAllPackages=false;
+}
+async function createAppSelectList(){
+    appSelectListCreated=true;
+    const fragment=document.createDocumentFragment();
+    /* 系统应用一般没必要加
+    而且如果堆一起在列表里会很长 那么分类显示和搜索至少加一个不然基本没法用
+    (说白了就是懒)
+    */
+    const allUserAppsList = await ksu.exec(`pm list packages -3`);
+    /**
+     * @type {string[]}
+     */
+    const listArray = allUserAppsList.stdout.replaceAll("package:", "").split("\n");
+    listArray.forEach((pkgName)=>{
+        const listElement=document.createElement("div");
+        listElement.style.marginTop="5px";
+        listElement.style.marginBottom="5px";
+        listElement.innerText=appListMap.get(pkgName) || pkgName;
+        listElement.addEventListener("click",async ()=>{
+            if(targetsSet.has(pkgName) || targetsSet.has(pkgName + "!")) {
+                ksu.toast("已添加过该应用");
+                return
+            };
+            const certCheckboxChecked = document.getElementById("generateCertificateCheckboxInSelectList").checked;
+            document.getElementById("targetList").appendChild(createAppListItem(pkgName+(certCheckboxChecked?"!":"")));
+            await addTargetPackage(pkgName,certCheckboxChecked);
+            document.getElementById("addPackageAppSelectDialog").close();
+        });
+        fragment.appendChild(listElement);
+    })
+    document.getElementById("addPackageSelect").appendChild(fragment);
+}
+async function createAppListCache(){
+    await ksu.exec(`sh ${util.webDir}/shell/init.sh`);
 }

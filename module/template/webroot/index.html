@@ -6,8 +6,13 @@
     <title>WebUI</title>
 </head>
 <body>
-    <div id="mask" style="width: 100%;height: 100%;opacity: 0.5;position: absolute;background-color: gray;" hidden></div>
+    <!-- 遮罩 -->
+    <div id="mask" style="width: 100%;height: 100%;opacity: 0.5;position: absolute;background-color: gray;text-align: center;padding-top: 50%;">
+        正在创建并加载应用列表缓存
+        这会需要一些时间
+    </div>
     <h2 class="text_center">Tricky Store</h2>
+    <button type="button" style="position: absolute; right: 3%;background-color: transparent;border-radius: 8px;border-width: 1px;width: 32px;height: 32px;top: 3%;" onclick="document.getElementById('aboutDialog').show()">i</button>
     <div style="display: flex;flex-direction: column;">
         <span id="keystoreState" class="text_center">Loading</span>
         <br>
@@ -16,9 +21,9 @@
         <span>
             目标应用列表:
             <span style="color: green;">绿色表示已启用证书生成</span>
-            <button type="button" onclick="document.getElementById('addPackageDialog').show()" style="width: 18%;">添加应用</button>
+            <button type="button" id="addPackageButton" style="width: 18%;" class="baseButton">添加应用</button>
             <!-- real5ec1cff_discuss 有人希望出这个功能 反正挺简单的 而且后面可能确实有不少人要-->
-            <button onclick="document.getElementById('addAllAppsDialog').show()">⁘</button>
+            <button onclick="document.getElementById('addAllAppsDialog').show()" class="baseButton">⁘</button>
         </span>
         <!-- 目标应用列表 -->
         <div id="targetList">
@@ -29,10 +34,11 @@
             <br>
             <input type="text" id="packageNameInput" style="width: 100%;" placeholder="包名不是应用名" onkeyup="value=value.replace(/[\u4e00-\u9fa5]/ig,'')"></input>
             <br>
-            <input type="checkbox" id="generateCertificateCheckbox">启用证书生成(应对TEE损坏)
+            <input type="checkbox" id="generateCertificateCheckbox"/>
+            <label for="generateCertificateCheckbox">启用证书生成(应对TEE损坏)</label>
             <br>
-            <button style="margin-top: 5px;" onclick="document.getElementById('packageNameInput').value='';this.parentNode.close()">取消</button>
-            <button id="addPackageDialogConfirmButton" style="float: right;margin-top: 5px;">添加</button>
+            <button style="margin-top: 5px;" onclick="document.getElementById('packageNameInput').value='';this.parentNode.close()" class="baseButton">取消</button>
+            <button id="addPackageDialogConfirmButton" style="float: right;margin-top: 5px;" class="baseButton">添加</button>
         </dialog>
         <!-- 添加全部应用 -->
         <dialog id="addAllAppsDialog">
@@ -54,7 +60,60 @@
             <input type="range" min="0" max="100" value="0" id="addAllAppsConfirmSlider" style="width: 95%;"></input>
             <br>
             <br>
-            <button onclick="this.parentNode.close()">取消</button>
+            <button onclick="this.parentNode.close()" class="baseButton">取消</button>
+        </dialog>
+        <dialog id="addPackageAppSelectDialog" style="border-radius: 5px;margin-top: 15%; height: 70%;width: 75%;">
+            <button onclick="this.parentNode.close()" style="float: right;" class="noBgButton">X</button>
+            <h3 style="text-align: center;">选择应用</h3>
+            <div>
+            </div><br>
+            <span style="color: gray;">要添加系统软件 请手动
+                <a style="text-decoration: none; color: cornflowerblue;" href="javascript:document.getElementById('addPackageAppSelectDialog').close();document.getElementById('addPackageDialog').show()">输入包名</a>
+                <!-- <button class="baseButton" onclick="this.parentNode.parentNode.close();document.getElementById('addPackageDialog').show()">输入包名</button> -->
+            </span>
+            <br>
+            <input type="checkbox" id="generateCertificateCheckboxInSelectList"/>
+            <label for="generateCertificateCheckboxInSelectList">启用证书生成(应对TEE损坏)</label>
+            <br>
+            <div id="addPackageSelect" style="height: 81.7%;overflow: scroll;">
+                
+            </div>
+        </dialog>
+        <dialog id="aboutDialog" style="margin-top: 10%;">
+            <button onclick="this.parentNode.close()" style="float: right;" class="noBgButton">X</button>
+            <h3 class="text_center">Tricky Store</h3>
+            <span class="text_center">A trick of keystore</span>
+            <br>
+            <span>项目链接:
+                <a href="https://github.com/5ec1cff/TrickyStore" style="text-decoration: none;color: aquamarine;">Github</a>
+            </span>
+            <!-- https://github.com/5ec1cff/TrickyStore/graphs/contributors -->
+            <!-- 虽然但是 看情况选择留不留吧 晚点人多了挤不挤的下呢 -->
+            <h3>贡献者名单</h3>
+            <h4>主体:</h4>
+            <span>5ec1cff:
+                <a href="https://github.com/5ec1cff" style="text-decoration: none;color: cornflowerblue;">Github</a>
+            </span>
+            <br>
+            <span>pomelohan:
+                <a href="https://github.com/pomelohan" style="text-decoration: none;color: cornflowerblue;">Github</a>
+            </span>
+            <br>
+            <span>osm0sis:
+                <a href="https://github.com/osm0sis" style="text-decoration: none;color: cornflowerblue;">Github</a>
+            </span>
+            <br>
+            <span>aviraxp:
+                <a href="https://github.com/aviraxp" style="text-decoration: none;color: cornflowerblue;">Github</a>
+            </span>
+            <br>
+            <span>yujincheng08:
+                <a href="https://github.com/yujincheng08" style="text-decoration: none;color: cornflowerblue;">Github</a>
+            </span>
+            <h4>WebUI:</h4>
+            <span>NativeStar:
+                <a href="https://github.com/NativeStar" style="text-decoration: none;color: cornflowerblue;">Github</a>
+            </span>
         </dialog>
     </div>
 </body>
@@ -65,6 +124,18 @@
     }
     .text_center{
         text-align: center;
+    }
+    .baseButton{
+        background-color: rgb(252, 250, 250);
+        border: 1px solid rgb(0, 0, 0);
+        border-radius: 5px;
+    }
+    .noBgButton{
+        background-color: transparent;
+        border: 0px;
+    }
+    .baseButton:hover{
+        background-color: rgb(255, 255, 255);
     }
 </style>
 </html>
