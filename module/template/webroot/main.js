@@ -1,10 +1,10 @@
 import * as ksu from "./ksu.js";
 import util from "./util.js";
 //环境检测
-// if (window.ksu == null) {
-//     document.body.innerHTML = '<h1 style="text-align:center;">Only can working in KernelSU</h1>';
-//     throw new ReferenceError("Only can working in KernelSU")
-// }
+if (window.ksu == null) {
+    document.body.innerHTML = '<h1 style="text-align:center;">Only can working in KernelSU</h1>';
+    throw new ReferenceError("Only can working in KernelSU")
+}
 /**
  * @type {Set<string>}
  */
@@ -54,7 +54,7 @@ window.addEventListener("load", async (event) => {
     appListMap=await util.readCache();
     if (appListMap===null) {
         //读取失败
-        mask.innerText="读取列表失败 将自动清除缓存 请重试"
+        mask.innerText="读取列表失败 将自动清除缓存并刷新"
         clearCache();
         return
     }
