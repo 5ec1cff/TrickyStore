@@ -69,10 +69,6 @@ io.github.vvb2060.mahoshojo?
 com.google.android.gms!
 ```
 
-## TODO
-
-- [Support Android 11 and below.](https://github.com/5ec1cff/TrickyStore/issues/25#issuecomment-2250588463)
-
 ## Acknowledgement
 
 - [FrameworkPatch](https://github.com/chiteroman/FrameworkPatch)
