@@ -6,9 +6,9 @@ This module is used for modifying the certificate chain generated for android ke
 
 [中文 README](README.zh-CN.md)
 
-## Stop opening source
+## Stop making source available
 
-Due to the rampant misuse and the contributions received after open-sourcing being less than expected, this module will be closed-source starting from version 1.1.0.
+Due to the rampant misuse and the contributions received after making source available being less than expected, this module will be closed-source starting from version 1.1.0.
 
 ## Usage
 
