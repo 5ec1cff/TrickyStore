@@ -2,7 +2,7 @@
 
 A trick of keystore. **Android 10 or above is required**.
 
-This module is used for modifying the certificate chain generated for android key attestation.
+[Zygisk](https://topjohnwu.github.io/Magisk/guides.html) module is used for modifying the certificate chain generated for android key attestation.
 
 [中文 README](README.zh-CN.md)
 
