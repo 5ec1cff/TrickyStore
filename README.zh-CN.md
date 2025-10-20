@@ -13,7 +13,7 @@
 ## 用法
 
 1. 刷入模块并重启。
-2. For more than DEVICE integrity, put an unrevoked hardware keybox.xml at `/data/adb/tricky_store/keybox.xml` （可选）。
+2. 为实现更高层次的设备完整性验证，请将未吊销的硬件密钥文件keybox.xml放置到目录`/data/adb/tricky_store/keybox.xml` （可选）。
 3. 在 `/data/adb/tricky_store/target.txt` 自定义修改生效的应用包名（可选） 。
 4. 大功告成！  
 
